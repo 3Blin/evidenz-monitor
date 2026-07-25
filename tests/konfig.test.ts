@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ladeWebKonfiguration } from "../src/lib/konfig";
+import { ladeWebKonfiguration, ladeVerschluesselungsSchluessel } from "../src/lib/konfig";
 
 const gueltig = {
   NEXT_PUBLIC_SUPABASE_URL: "https://beispiel.supabase.co",
@@ -27,5 +27,24 @@ describe("Web-Konfiguration", () => {
   it("lehnt eine Auftragskennung ab, die keine UUID ist (Fehlerfall)", () => {
     expect(() => ladeWebKonfiguration({ ...gueltig, NEXT_PUBLIC_AUFTRAG: "irgendwas" }))
       .toThrow(/UUID/);
+  });
+});
+
+describe("Serverseitiger Verschlüsselungsschlüssel", () => {
+  it("liefert den Wert aus der Umgebung", () => {
+    expect(ladeVerschluesselungsSchluessel({ BYOK_ENCRYPTION_KEY: "abc" })).toBe("abc");
+  });
+
+  it("bricht mit erklärender Meldung ab, wenn er fehlt (Fehlerfall)", () => {
+    // Ohne diesen Wert könnte die Anwendung KI-Zugänge nur im Klartext
+    // speichern - deshalb ist Abbrechen die einzige richtige Antwort.
+    expect(() => ladeVerschluesselungsSchluessel({})).toThrow(/BYOK_ENCRYPTION_KEY/);
+    expect(() => ladeVerschluesselungsSchluessel({ BYOK_ENCRYPTION_KEY: "" }))
+      .toThrow(/verschlüsselt/);
+  });
+
+  it("trägt keine NEXT_PUBLIC_-Vorsilbe", () => {
+    // Ein NEXT_PUBLIC_-Wert landet im Browser. Dieser darf das nie.
+    expect(ladeVerschluesselungsSchluessel.toString()).not.toContain("NEXT_PUBLIC");
   });
 });

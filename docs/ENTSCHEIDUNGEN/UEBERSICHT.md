@@ -33,3 +33,10 @@
   ersten Betrieb 6 von 24 Aussagen nichts mit dem Thema zu tun hatten. Quellen,
   die durch ihre Adresse schon auf das Thema begrenzt sind, müssen es im Text
   nicht wiederholen; sonst fielen gerade die Frühwarnkanäle heraus.
+- **0009 Anmeldung per Magic Link, Verwaltung in der Oberfläche** *(Vorschlag,
+  Freigabe ausstehend)*: Anmeldung ohne Passwort über Supabase Auth; Aufträge,
+  Quellen, Relevanzregeln und der eigene KI-Zugang sind in der Oberfläche
+  bearbeitbar — weil Einstellungen, die nur über die Datenbank erreichbar sind,
+  nicht gepflegt werden. Schreibzugriff über die vorhandenen Zugriffsregeln,
+  eigene Datenbankfunktionen nur dort, wo diese nicht greifen können.
+  `NEXT_PUBLIC_AUFTRAG` wird zur Vorauswahl, mehrere Demo-Aufträge sind möglich.

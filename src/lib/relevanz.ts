@@ -41,6 +41,21 @@ function maskiere(begriff: string): string {
 }
 
 /**
+ * Wandelt eine Eingabe aus der Verwaltung in eine Begriffsliste.
+ *
+ * Komma oder Zeilenumbruch trennen, Leerraum fällt weg, leere Einträge
+ * entfallen. Steht hier und nicht im Formular, weil ein leerer oder nur aus
+ * Leerzeichen bestehender Begriff sonst jeden Inhalt aussortieren würde -
+ * das gehört geprüft.
+ */
+export function begriffslisteAusEingabe(eingabe: string): string[] {
+  return eingabe
+    .split(/[,\n]/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+/**
  * Trifft der Begriff am Wortanfang?
  *
  * Bewusst nur am Anfang und nicht auch am Ende: "KB" soll die Kennungen der

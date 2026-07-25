@@ -7,7 +7,12 @@
  * unbemerkt zurückkommen.
  */
 import { describe, it, expect } from "vitest";
-import { pruefeRelevanz, begriffKommtVor, type RelevanzRegeln } from "../src/lib/relevanz";
+import {
+  pruefeRelevanz,
+  begriffKommtVor,
+  begriffslisteAusEingabe,
+  type RelevanzRegeln,
+} from "../src/lib/relevanz";
 
 /** Die Begriffe des ersten Auftrags, wie sie im Seed stehen. */
 const WINDOWS_AUFTRAG: RelevanzRegeln = {
@@ -44,6 +49,24 @@ describe("Relevanzprüfung", () => {
     expect(ja.begruendung).toMatch(/Suchbegriffe getroffen/);
     const nein = pruefeRelevanz("Etwas anderes", "Text", WINDOWS_AUFTRAG);
     expect(nein.begruendung.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Begriffe aus der Eingabe der Verwaltung", () => {
+  it("trennt bei Komma und bei Zeilenumbruch", () => {
+    expect(begriffslisteAusEingabe("Windows 11, 25H2\nUpdate")).toEqual([
+      "Windows 11", "25H2", "Update",
+    ]);
+  });
+
+  it("entfernt Leerraum und leere Einträge", () => {
+    // Ein leerer Begriff würde als Pflichtbegriff jeden Inhalt aussortieren.
+    expect(begriffslisteAusEingabe("  Update ,, ,\n  KB  \n")).toEqual(["Update", "KB"]);
+  });
+
+  it("ergibt für eine leere Eingabe eine leere Liste", () => {
+    expect(begriffslisteAusEingabe("")).toEqual([]);
+    expect(begriffslisteAusEingabe("   \n , ")).toEqual([]);
   });
 });
 

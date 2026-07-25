@@ -17,6 +17,8 @@
     "audit:deps": "npm audit --audit-level=high"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.8",
     "d3-force": "3.0.0",
     "d3-selection": "3.0.0",
     "next": "16.2.11",

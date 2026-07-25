@@ -23,14 +23,27 @@ async function main(): Promise<void> {
   const db = new pg.Pool({ connectionString: process.env["DATABASE_URL"] });
 
   try {
-    const { rows: auftraege } = await db.query<AuftragZeile>(
-      `SELECT id, suchbegriffe, pflichtbegriffe, ausschlussbegriffe,
+    // Alle aktiven Aufträge, nicht nur der erste: Seit es mehrere Aufträge gibt,
+    // wäre "LIMIT 1" ein stiller Datenverlust - der zweite Auftrag bekäme nie
+    // eine Bewertung und sein Dashboard bliebe leer.
+    const { rows: auftraege } = await db.query<AuftragZeile & { name: string }>(
+      `SELECT id, name, suchbegriffe, pflichtbegriffe, ausschlussbegriffe,
               mindest_treffer AS "mindestTreffer"
-         FROM auftraege LIMIT 1`,
+         FROM auftraege WHERE aktiv = true ORDER BY erstellt_am`,
     );
-    const auftrag = auftraege[0];
-    if (!auftrag) throw new Error("Kein Beobachtungsauftrag vorhanden");
+    if (auftraege.length === 0) throw new Error("Kein aktiver Beobachtungsauftrag vorhanden");
 
+    for (const auftrag of auftraege) {
+      process.stdout.write(`\n${auftrag.name}\n`);
+      await werteAus(db, auftrag);
+    }
+  } finally {
+    await db.end();
+  }
+}
+
+async function werteAus(db: pg.Pool, auftrag: AuftragZeile): Promise<void> {
+  {
     // Bewusst ungefiltert aus der Datenbank: Die Relevanzentscheidung trifft
     // das geprüfte Regelwerk in src/lib/relevanz.ts, nicht ein ILIKE in der
     // Abfrage. Nur so ist sie testbar und begründet nachvollziehbar.
@@ -124,12 +137,16 @@ async function main(): Promise<void> {
     }
 
     process.stdout.write(`Aussagen mit Reifegrad: ${anzahl}\n`);
+    // Verteilung je Auftrag, nicht über die ganze Datenbank - sonst zeigte
+    // jeder Auftrag die Summe aller anderen mit.
     const { rows: verteilung } = await db.query<{ stufe: number; anzahl: string }>(
-      "SELECT stufe, count(*)::text AS anzahl FROM reifegrad_verlauf GROUP BY stufe ORDER BY stufe",
+      `SELECT v.stufe, count(*)::text AS anzahl
+         FROM reifegrad_verlauf v JOIN aussagen s ON s.id = v.aussage_id
+        WHERE s.auftrag_id = $1
+        GROUP BY v.stufe ORDER BY v.stufe`,
+      [auftrag.id],
     );
     for (const v of verteilung) process.stdout.write(`  Stufe ${v.stufe}: ${v.anzahl} Aussagen\n`);
-  } finally {
-    await db.end();
   }
 }
 

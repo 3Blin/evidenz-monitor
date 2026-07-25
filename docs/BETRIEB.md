@@ -77,10 +77,30 @@ Höchstens 50 Inhalte je Anfrage. Die Antwort nennt, wie viele angenommen
 und wie viele als Dublette übersprungen wurden. Ein Token abschalten:
 `UPDATE ingest_tokens SET aktiv=false WHERE bezeichnung='Mein Sammler';`
 
-## Suchbegriffe und Relevanz anpassen
+## Anmelden und verwalten
 
-Solange es keine Oberfläche dafür gibt, geschieht das über die Datenbank. Alle
-Angaben gehören zum Auftrag — der Programmcode wird dafür nicht angefasst.
+Anmeldung läuft ohne Passwort: Auf `/anmelden` die E-Mail-Adresse eintragen, den
+zugeschickten Link öffnen, fertig. Der Link gilt nur kurz und nur einmal.
+
+Angemeldet stehen unter „Verwalten" zur Verfügung:
+
+- **Aufträge anlegen und bearbeiten** — Name, Fragestellung, Suchbegriffe,
+  Pflicht- und Ausschlussbegriffe, nötige Trefferzahl, Abrufabstand, ob der
+  Auftrag aktiv ist und ob er ohne Anmeldung lesbar sein soll.
+- **Quellen verwalten** — hinzufügen, abschalten, als themenspezifisch
+  markieren, löschen. Abschalten statt löschen erhält die bisherigen Beiträge
+  als Belege.
+- **Eigener KI-Zugang** — der Schlüssel wird auf dem Server verschlüsselt und
+  nie wieder herausgegeben. Ein neuer Eintrag ersetzt den alten.
+
+Änderungen an den Relevanzregeln wirken beim nächsten `npm run auswerten`. Ein
+neuer Sammellauf ist dafür nicht nötig, die Inhalte sind schon da.
+
+## Suchbegriffe und Relevanz über die Datenbank anpassen
+
+Dasselbe geht auch ohne Oberfläche — etwa in einem Skript oder wenn die
+Anmeldung noch nicht eingerichtet ist. Alle Angaben gehören zum Auftrag; der
+Programmcode wird dafür nicht angefasst.
 
 Aktuellen Stand ansehen:
 
@@ -179,12 +199,12 @@ zurückgespielt wurde, ist keine Sicherung.
 
 ## Grenzen im aktuellen Stand
 
-- Anmeldung/Mehrbenutzerbetrieb ist im Datenmodell vorbereitet und die
-  Datenbank trennt die Daten verschiedener Nutzer bereits selbst; die
-  Supabase-Anmeldung selbst ist noch nicht eingerichtet. Solange sie fehlt,
-  ist genau ein Auftrag über das Feld `oeffentliche_demo` ohne Anmeldung
-  lesbar. Vor der Veröffentlichung im Internet: Anmeldung nachziehen und
-  dieses Feld bewusst bestätigen oder abschalten.
+- Anmeldung und Mehrbenutzerbetrieb sind eingebaut (Magic Link, ADR 0009). Im
+  Supabase-Projekt müssen dafür Site-URL und Rückkanal-Adressen eingetragen
+  sein, siehe docs/VEROEFFENTLICHEN.md — sonst führt der Anmeldelink ins Leere.
+- Aufträge mit `oeffentliche_demo` sind ohne Anmeldung lesbar. Vor dem echten
+  Produktivbetrieb je Auftrag bestätigen, dass er keine persönlichen Angaben
+  enthält, oder das Feld abschalten.
 - Die KI-Analyse ist gebaut und getestet, aber noch nicht in den
   Sammellauf eingehängt; bis dahin arbeitet die Vorklassifikation.
 - Benachrichtigungen, Widerspruchsanzeige und Handlungsempfehlungen sind

@@ -2,13 +2,31 @@
 
 Was die Software kann, welcher Baustein es macht und wozu. Ohne Fachbegriffe.
 
+## Anmelden
+**Macht:** Anmeldung per Anmeldelink an die eigene E-Mail-Adresse. Kein Passwort.
+**Existiert, damit:** jeder nur seine eigenen Aufträge sieht und bearbeiten kann.
+Ein Passwort, das schlecht gewählt oder wiederverwendet wird, gibt es damit nicht
+— und auch kein Zurücksetzen-Verfahren, das selbst angreifbar wäre.
+**Baustein:** Anmeldung (Supabase Auth)
+
 ## Beobachtungsaufträge verwalten
 **Macht:** Speichert, was beobachtet werden soll — Thema, Fragestellung,
-Suchbegriffe, Quellen, Abstand zwischen Abrufen.
+Suchbegriffe, Relevanzregeln, Quellen, Abstand zwischen Abrufen. Angemeldet ist
+das alles in der Oberfläche unter „Verwalten" bearbeitbar; neue Aufträge legt man
+dort ebenfalls an.
 **Existiert, damit:** neue Themen ohne Programmierung entstehen. Ein Auftrag
 ist ein Eintrag in der Datenbank, kein Code. Windows 11 ist nur der erste
-Eintrag; Wetterlage, Preise oder Ferienhäuser funktionieren genauso.
-**Baustein:** Auftragsverwaltung · **Tests:** dashboard-funktion.test.ts (8 Tests)
+Eintrag; Sicherheitslücken, Wetterlage oder Preise funktionieren genauso — die
+Grundeinrichtung legt bewusst zwei Aufträge aus verschiedenen Bereichen an.
+**Baustein:** Auftragsverwaltung · **Tests:** dashboard-funktion.test.ts (8 Tests),
+verwaltung-funktionen.test.ts (14 Tests)
+
+## Mehrere Aufträge nebeneinander zeigen
+**Macht:** Oben in der Oberfläche stehen alle Aufträge zur Auswahl, die ohne
+Anmeldung lesbar sind — angemeldet zusätzlich die eigenen.
+**Existiert, damit:** sichtbar wird, dass der Kern kein Thema kennt. Vorher zeigte
+die Oberfläche genau einen fest eingestellten Auftrag.
+**Baustein:** Auftragsverwaltung · **Tests:** auftragsliste.test.ts (11 Tests)
 
 ## Quellen abrufen
 **Macht:** Holt in festen Abständen neue Beiträge von den hinterlegten
@@ -139,7 +157,10 @@ die Prüfung nur in der Anwendung, wäre sie am Vorbeiweg wirkungslos.
 
 ## Zugangsschlüssel schützen
 **Macht:** Verschlüsselt den KI-Schlüssel des Nutzers vor dem Speichern und
-filtert ihn automatisch aus allen Protokollen.
+filtert ihn automatisch aus allen Protokollen. Verschlüsselt wird auf dem
+Server, nie im Browser. Der Schlüssel wird nie wieder herausgegeben — auch das
+Formular kann ihn nicht anzeigen, nur ersetzen.
 **Existiert, damit:** ein Datenbank- oder Protokollzugriff den Schlüssel
 nicht preisgibt.
-**Baustein:** Verschlüsselung · **Tests:** fundament.test.ts
+**Baustein:** Verschlüsselung · **Tests:** fundament.test.ts,
+verwaltung-funktionen.test.ts
