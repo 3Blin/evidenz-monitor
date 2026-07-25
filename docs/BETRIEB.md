@@ -77,6 +77,55 @@ Höchstens 50 Inhalte je Anfrage. Die Antwort nennt, wie viele angenommen
 und wie viele als Dublette übersprungen wurden. Ein Token abschalten:
 `UPDATE ingest_tokens SET aktiv=false WHERE bezeichnung='Mein Sammler';`
 
+## Suchbegriffe und Relevanz anpassen
+
+Solange es keine Oberfläche dafür gibt, geschieht das über die Datenbank. Alle
+Angaben gehören zum Auftrag — der Programmcode wird dafür nicht angefasst.
+
+Aktuellen Stand ansehen:
+
+```
+psql "$DATABASE_URL" -c "SELECT name, suchbegriffe, pflichtbegriffe,
+  ausschlussbegriffe, mindest_treffer FROM auftraege;"
+```
+
+Ändern, zum Beispiel:
+
+```
+psql "$DATABASE_URL" -c "UPDATE auftraege SET
+  suchbegriffe = ARRAY['Windows 11','25H2','Update','KB','Treiber','Bluescreen'],
+  pflichtbegriffe = ARRAY['Windows'],
+  ausschlussbegriffe = ARRAY['Anzeige'],
+  mindest_treffer = 1
+  WHERE name = 'Windows 11 Updates & Probleme';"
+```
+
+Was die vier Angaben bedeuten:
+
+- **suchbegriffe** — davon müssen mindestens `mindest_treffer` viele vorkommen.
+- **pflichtbegriffe** — *alle* müssen vorkommen, sonst fliegt der Beitrag raus.
+  Das ist der wirksamste Hebel gegen unpassende Meldungen.
+- **ausschlussbegriffe** — kommt einer vor, ist der Beitrag raus, egal was sonst
+  passt.
+- **mindest_treffer** — höher setzen, wenn einzelne allgemeine Begriffe zu viel
+  hereinlassen.
+
+Begriffe treffen nur am **Wortanfang**: „KB" findet „KB5000001", „Update" findet
+„Updates", aber keiner von beiden trifft mitten in einem fremden Wort.
+
+Bei Quellen, die schon auf das Thema begrenzt sind (ein reines Windows-Forum,
+ein Feed mit Suchabfrage), sollten die Pflichtbegriffe nicht verlangt werden —
+Forenbeiträge schreiben selten dazu, worum es geht:
+
+```
+psql "$DATABASE_URL" -c "UPDATE quellen SET themenspezifisch = true
+  WHERE url LIKE '%elevenforum%' OR url LIKE '%r/Windows11%';"
+```
+
+Nach jeder Änderung `npm run auswerten` — der Lauf meldet, wie viele Inhalte
+geprüft und wie viele aussortiert wurden. Der Sammellauf ist dafür nicht nötig,
+die Inhalte sind schon da.
+
 ## Sichern
 
 - **Bei Supabase:** tägliche Sicherungen laufen automatisch; im

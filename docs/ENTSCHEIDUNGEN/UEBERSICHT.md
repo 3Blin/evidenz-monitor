@@ -27,3 +27,9 @@
   Datenbankfunktion ein, und der fehlende Web-Abruf-Adapter wird nachgezogen —
   weil die Schnittstelle so ohne Datenbank-Zugangsdaten auskommt und die
   Dublettenerkennung an einer Stelle bleibt.
+- **0008 Relevanzregeln sind Angaben am Auftrag** *(Vorschlag, Freigabe
+  ausstehend)*: Pflicht-, Ausschluss- und Suchbegriffe samt nötiger Trefferzahl
+  gehören zum Auftrag, die Auswertung in ein getestetes Regelwerk — weil im
+  ersten Betrieb 6 von 24 Aussagen nichts mit dem Thema zu tun hatten. Quellen,
+  die durch ihre Adresse schon auf das Thema begrenzt sind, müssen es im Text
+  nicht wiederholen; sonst fielen gerade die Frühwarnkanäle heraus.

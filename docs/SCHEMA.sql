@@ -20,6 +20,11 @@ CREATE TABLE auftraege (
   aktiv         BOOLEAN NOT NULL DEFAULT true,
   dashboard_config JSONB NOT NULL DEFAULT '{}'::jsonb, -- deklarative Widget-Konfig (Schema in docs/dashboard-config.schema.json)
   oeffentliche_demo BOOLEAN NOT NULL DEFAULT false, -- ohne Anmeldung lesbar (ADR 0004), nachgetragen in Migration 0002
+  -- Relevanzregeln (ADR 0008, nachgetragen in Migration 0003). Themen sind
+  -- Daten: diese Felder steuern die Auswahl, nicht der Code.
+  pflichtbegriffe TEXT[] NOT NULL DEFAULT '{}',    -- alle müssen vorkommen
+  ausschlussbegriffe TEXT[] NOT NULL DEFAULT '{}', -- keiner darf vorkommen
+  mindest_treffer INT NOT NULL DEFAULT 1 CHECK (mindest_treffer >= 1),
   erstellt_am   TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, name)
 );
@@ -37,6 +42,9 @@ CREATE TABLE quellen (
   geo_bezug     TEXT,
   vertrauens_basis TEXT NOT NULL DEFAULT 'unbewertet', -- Grundeinstufung, begründet
   aktiv         BOOLEAN NOT NULL DEFAULT true,
+  -- Quelle ist durch ihre Adresse schon auf das Thema begrenzt (ADR 0008,
+  -- nachgetragen in Migration 0003); Pflichtbegriffe gelten dann als erfüllt.
+  themenspezifisch BOOLEAN NOT NULL DEFAULT false,
   UNIQUE (auftrag_id, url)
 );
 

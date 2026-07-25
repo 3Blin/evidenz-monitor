@@ -45,6 +45,19 @@ unabhängige Bestätigungen zählt. Das ist der häufigste Fehler bei
 automatischer Nachrichtenauswertung.
 **Baustein:** Dublettenerkennung · **Tests:** dedup.test.ts (11 Tests)
 
+## Unpassende Meldungen aussortieren
+**Macht:** Prüft für jeden Beitrag, ob er zum Auftrag gehört. Dafür gelten drei
+Angaben am Auftrag: Begriffe, die vorkommen **müssen**, Begriffe, die ihn
+**ausschließen**, und wie viele der Suchbegriffe mindestens treffen müssen.
+Begriffe zählen nur am Wortanfang, damit „KB" die Kennung „KB5000001" findet,
+aber nicht mitten in einem fremden Wort trifft. Quellen, die schon auf das
+Thema begrenzt sind — ein reines Windows-Forum etwa —, müssen das Thema im Text
+nicht wiederholen. Jede Entscheidung wird begründet mitgeschrieben.
+**Existiert, damit:** im Dashboard steht, was zum Auftrag gehört. Vorher genügte
+ein einziges allgemeines Wort wie „Updates", wodurch ein Viertel der Aussagen
+nichts mit dem Thema zu tun hatte.
+**Baustein:** Relevanzprüfung · **Tests:** relevanz.test.ts (17 Tests)
+
 ## Meldungen einordnen (ohne KI)
 **Macht:** Bestimmt anhand von Zeitpunkt, Herausgeber und Titelähnlichkeit,
 welcher Beitrag die Ursprungsmeldung ist und welche Übernahmen oder

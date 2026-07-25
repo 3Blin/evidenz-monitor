@@ -8,30 +8,55 @@
 import pg from "pg";
 import { gruppiere, klassifiziereGruppe, type VorInhalt } from "../src/lib/vorklassifikation";
 import { ermittleReifegrad, REGEL_VERSION, type Beleg } from "../src/lib/reifegrad";
+import { pruefeRelevanz, type RelevanzRegeln } from "../src/lib/relevanz";
 
 interface InhaltZeile extends VorInhalt {
   readonly auszug: string;
+  readonly themenspezifisch: boolean;
+}
+
+interface AuftragZeile extends RelevanzRegeln {
+  readonly id: string;
 }
 
 async function main(): Promise<void> {
   const db = new pg.Pool({ connectionString: process.env["DATABASE_URL"] });
 
   try {
-    const { rows: auftraege } = await db.query<{ id: string; suchbegriffe: string[] }>(
-      "SELECT id, suchbegriffe FROM auftraege LIMIT 1",
+    const { rows: auftraege } = await db.query<AuftragZeile>(
+      `SELECT id, suchbegriffe, pflichtbegriffe, ausschlussbegriffe,
+              mindest_treffer AS "mindestTreffer"
+         FROM auftraege LIMIT 1`,
     );
     const auftrag = auftraege[0];
     if (!auftrag) throw new Error("Kein Beobachtungsauftrag vorhanden");
 
-    const { rows: inhalte } = await db.query<InhaltZeile>(
+    // Bewusst ungefiltert aus der Datenbank: Die Relevanzentscheidung trifft
+    // das geprüfte Regelwerk in src/lib/relevanz.ts, nicht ein ILIKE in der
+    // Abfrage. Nur so ist sie testbar und begründet nachvollziehbar.
+    const { rows: alleInhalte } = await db.query<InhaltZeile>(
       `SELECT i.id AS "inhaltId", i.titel, i.auszug, i.veroeffentlicht_am AS "veroeffentlichtAm",
-              q.typ AS "quellentyp", q.herausgeber
+              q.typ AS "quellentyp", q.herausgeber, q.themenspezifisch
        FROM inhalte i JOIN quellen q ON q.id=i.quelle_id
-       WHERE q.auftrag_id=$1 AND q.aktiv=true
-         AND (i.titel ILIKE ANY($2) OR i.auszug ILIKE ANY($2))`,
-      [auftrag.id, auftrag.suchbegriffe.map((s) => `%${s}%`)],
+       WHERE q.auftrag_id=$1 AND q.aktiv=true`,
+      [auftrag.id],
     );
-    process.stdout.write(`Thematisch relevante Inhalte: ${inhalte.length}\n`);
+
+    const relevanzBegruendungen = new Map<string, string>();
+    const inhalte: InhaltZeile[] = [];
+    for (const inhalt of alleInhalte) {
+      const befund = pruefeRelevanz(
+        inhalt.titel, inhalt.auszug, auftrag, inhalt.themenspezifisch,
+      );
+      if (befund.relevant) {
+        inhalte.push(inhalt);
+        relevanzBegruendungen.set(inhalt.inhaltId, befund.begruendung);
+      }
+    }
+    process.stdout.write(
+      `Inhalte geprüft: ${alleInhalte.length} · davon relevant: ${inhalte.length}` +
+        ` · aussortiert: ${alleInhalte.length - inhalte.length}\n`,
+    );
 
     await db.query("DELETE FROM meldungsgruppen WHERE auftrag_id=$1", [auftrag.id]);
     await db.query("DELETE FROM aussagen WHERE auftrag_id=$1", [auftrag.id]);
@@ -58,7 +83,8 @@ async function main(): Promise<void> {
         `INSERT INTO aussagen (auftrag_id, sachverhalt, entitaeten, zeitraum_von, kontext)
          VALUES ($1,$2,$3,$4,$5) RETURNING id`,
         [auftrag.id, erster.titel.slice(0, 500), [], erster.veroeffentlichtAm,
-         "Deterministische Vorklassifikation; KI-Analyse noch nicht ausgeführt"],
+         `Deterministische Vorklassifikation; KI-Analyse noch nicht ausgeführt.` +
+         ` Relevanz: ${relevanzBegruendungen.get(erster.inhaltId) ?? "ohne Angabe"}`],
       );
       const aussageId = a[0]?.id;
       if (!aussageId) continue;
