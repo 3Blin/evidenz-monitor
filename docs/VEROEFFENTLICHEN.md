@@ -45,8 +45,8 @@ zusammengeführt werden, das die sieben Prüfschritte nicht besteht.
 Die Weboberfläche zeigt nur an. Das Abrufen der Quellen läuft getrennt:
 
 ```
-node scripts/sammeln.mjs
-npx vite-node scripts/auswerten.job.ts
+npm run sammeln
+npm run auswerten
 ```
 
 Für den Dauerbetrieb später ein Zeitplan (Vercel Cron oder ein kleiner

@@ -17,3 +17,13 @@
 - **0005 Ein Datenweg für die Oberfläche:** Weboberfläche und Schnittstelle
   lesen ausschließlich über die geprüfte Datenbankfunktion — weil zwei Wege
   zu denselben Daten unweigerlich auseinanderlaufen.
+- **0006 Datenbankobjekte gehören in Migrationen** *(Vorschlag, Freigabe
+  ausstehend)*: Zeilen-Sicherheit und Datenbankfunktionen werden per Migration
+  angelegt, nicht von Hand in der Konsole — weil ein Zugriffsschutz, den man
+  nicht prüfen kann, keiner ist. Beim ersten Test trat sofort ein Fehler
+  zutage, der jeden Auftrag öffentlich lesbar gemacht hätte.
+- **0007 Einlieferung über eine Datenbankfunktion** *(Vorschlag, Freigabe
+  ausstehend)*: Externe Sammler liefern über eine token-geprüfte
+  Datenbankfunktion ein, und der fehlende Web-Abruf-Adapter wird nachgezogen —
+  weil die Schnittstelle so ohne Datenbank-Zugangsdaten auskommt und die
+  Dublettenerkennung an einer Stelle bleibt.

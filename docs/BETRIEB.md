@@ -17,6 +17,11 @@ Für Menschen ohne Programmierkenntnisse. Befehle im Projektordner ausführen.
      KI-Schlüssel neu hinterlegen.
    - `LOG_LEVEL` — `info` im Normalbetrieb, `debug` zur Fehlersuche
 4. Datenbankstruktur anlegen: `npm run migrate`
+   Das legt Tabellen, Zugriffsregeln und die Datenbankfunktionen an. Ohne
+   diesen Schritt bleibt das Dashboard leer.
+5. Ersten Beobachtungsauftrag anlegen: `npm run seed`
+   Ohne einen Auftrag hat der Sammellauf nichts zu tun und bricht mit einer
+   Meldung ab.
 
 Fehlt ein Pflichtwert, startet die Anwendung nicht und sagt genau, welcher.
 
@@ -32,11 +37,45 @@ Im Terminalfenster `Strg + C`.
 
 ## Quellen abrufen
 
-Ein Sammellauf: `node scripts/sammeln.mjs`
-Auswertung (Gruppierung, Bewertung): `npx vite-node scripts/auswerten.job.ts`
+Ein Sammellauf: `npm run sammeln`
+Auswertung (Gruppierung, Bewertung): `npm run auswerten`
 
 Im Dauerbetrieb übernimmt das ein Zeitplan (z. B. ein Vercel-Cron-Auftrag)
 im Abstand, der im Auftrag hinterlegt ist.
+
+Ob eine Quelle als Feed oder als Webseite gelesen wird, entscheidet ihre
+Adresse: Endet sie auf `.rss`, `.xml`, `.atom` oder enthält sie `/feed`,
+wird sie als Feed gelesen, sonst als einzelne Webseite.
+
+## Inhalte von einem eigenen Sammler einliefern
+
+Kanäle mit Anmeldezwang ruft die Software nicht selbst ab. Ein eigener
+Agent kann sie einliefern. Dafür braucht er ein Token, das zu genau einem
+Beobachtungsauftrag gehört. Anlegen (Token selbst ausdenken, mindestens 24
+Zeichen, danach **nicht mehr auslesbar** — die Datenbank speichert nur den
+Prüfwert):
+
+```
+TOKEN=$(node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))")
+echo "Token merken: $TOKEN"
+psql "$DATABASE_URL" -c "INSERT INTO ingest_tokens (auftrag_id,bezeichnung,token_hash)
+  VALUES ('DIE-AUFTRAGSKENNUNG','Mein Sammler',
+          encode(sha256(convert_to('$TOKEN','utf8')),'hex'));"
+```
+
+Einliefern:
+
+```
+curl -X POST https://MEINE-ADRESSE/api/v1/ingest \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"quelle":{"url":"https://sammler.example/kanal","herausgeber":"Mein Sammler"},
+       "inhalte":[{"url":"https://beispiel.example/1","titel":"Meldung",
+                   "auszug":"Kurzer Auszug","veroeffentlichtAm":"2026-07-25T10:00:00Z"}]}'
+```
+
+Höchstens 50 Inhalte je Anfrage. Die Antwort nennt, wie viele angenommen
+und wie viele als Dublette übersprungen wurden. Ein Token abschalten:
+`UPDATE ingest_tokens SET aktiv=false WHERE bezeichnung='Mein Sammler';`
 
 ## Sichern
 
@@ -91,9 +130,12 @@ zurückgespielt wurde, ist keine Sicherung.
 
 ## Grenzen im aktuellen Stand
 
-- Anmeldung/Mehrbenutzerbetrieb ist im Datenmodell vorbereitet, die
-  Supabase-Anbindung ist noch nicht eingerichtet — vor der Veröffentlichung
-  im Internet zwingend nachziehen.
+- Anmeldung/Mehrbenutzerbetrieb ist im Datenmodell vorbereitet und die
+  Datenbank trennt die Daten verschiedener Nutzer bereits selbst; die
+  Supabase-Anmeldung selbst ist noch nicht eingerichtet. Solange sie fehlt,
+  ist genau ein Auftrag über das Feld `oeffentliche_demo` ohne Anmeldung
+  lesbar. Vor der Veröffentlichung im Internet: Anmeldung nachziehen und
+  dieses Feld bewusst bestätigen oder abschalten.
 - Die KI-Analyse ist gebaut und getestet, aber noch nicht in den
   Sammellauf eingehängt; bis dahin arbeitet die Vorklassifikation.
 - Benachrichtigungen, Widerspruchsanzeige und Handlungsempfehlungen sind

@@ -3,9 +3,11 @@ import pg from "pg";
 const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const NUTZER = "00000000-0000-0000-0000-000000000001";
 
+// oeffentliche_demo: ohne Anmeldung lesbar (ADR 0004). Vor dem echten
+// Produktivbetrieb bewusst bestätigen oder abschalten.
 const { rows } = await db.query(
-  `INSERT INTO auftraege (user_id,name,zielbeschreibung,fragestellung,suchbegriffe,intervall_minuten,dashboard_config)
-   VALUES ($1,$2,$3,$4,$5,$6,$7)
+  `INSERT INTO auftraege (user_id,name,zielbeschreibung,fragestellung,suchbegriffe,intervall_minuten,dashboard_config,oeffentliche_demo)
+   VALUES ($1,$2,$3,$4,$5,$6,$7,true)
    ON CONFLICT (user_id,name) DO UPDATE SET zielbeschreibung=EXCLUDED.zielbeschreibung
    RETURNING id`,
   [NUTZER, "Windows 11 Updates & Probleme",

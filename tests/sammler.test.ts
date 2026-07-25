@@ -71,10 +71,24 @@ describe("Quellen-Abrufer", () => {
       [auftragId]);
     const zweiteId = zweite.rows[0]!.id;
     const ergebnisse = await sammleAuftrag(db, auftragId,
-      (typ) => (typ === "rss" ? adapterMit([roh("Gemeinsame Meldung")]) : kaputterAdapter), "cid-4");
+      (q) => (q.typ === "rss" ? adapterMit([roh("Gemeinsame Meldung")]) : kaputterAdapter), "cid-4");
     expect(ergebnisse).toHaveLength(2);
     expect(ergebnisse.every((e) => e.status === "ok")).toBe(true);
     await db.query("DELETE FROM quellen WHERE id=$1", [zweiteId]);
+  });
+
+  it("lässt eingelieferte Quellen beim Abruf aus (ADR 0002)", async () => {
+    // Inhalte dieser Quelle kommen über die Ingest-Schnittstelle. Würde der
+    // Abrufer sie anfassen, gäbe es bei jedem Lauf einen Fehlereintrag.
+    const extern = await db.query<{ id: string }>(
+      `INSERT INTO quellen (auftrag_id,url,typ,herausgeber)
+       VALUES ($1,'https://sammler.example/hermes','extern_agent','Hermes-Sammler') RETURNING id`,
+      [auftragId]);
+    const externId = extern.rows[0]!.id;
+    const ergebnisse = await sammleAuftrag(db, auftragId,
+      () => adapterMit([roh("Nur fuer echte Quellen")]), "cid-extern");
+    expect(ergebnisse.some((e) => e.quelleId === externId)).toBe(false);
+    await db.query("DELETE FROM quellen WHERE id=$1", [externId]);
   });
 
   it("liefert leere Liste für einen Auftrag ohne aktive Quellen (Fehlerfall)", async () => {

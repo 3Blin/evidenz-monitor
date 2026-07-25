@@ -1,6 +1,11 @@
 -- SCHEMA.sql — Fixiertes Datenmodell Evidenz-Monitor (Vertrag, Phase 1)
--- Änderungen NUR über Migrationen + ADR. Stand: 24.07.2026
+-- Änderungen NUR über Migrationen + ADR. Stand: 25.07.2026
 -- Nutzerkonten selbst liegen in Supabase Auth (auth.users); hier nur Verweise.
+--
+-- Diese Datei beschreibt die Tabellen. Zeilen-Sicherheit und die
+-- Datenbankfunktionen (dashboard_daten, inhalt_einliefern) stehen in
+-- migrations/0002_zeilensicherheit_und_datenbankfunktionen.sql — sie gehören
+-- laut ADR 0006 genauso in Migrationen wie die Tabellen selbst.
 
 -- Beobachtungsauftrag: themenneutraler Datensatz, KEIN Code.
 CREATE TABLE auftraege (
@@ -14,6 +19,7 @@ CREATE TABLE auftraege (
   intervall_minuten INT NOT NULL DEFAULT 360 CHECK (intervall_minuten >= 15),
   aktiv         BOOLEAN NOT NULL DEFAULT true,
   dashboard_config JSONB NOT NULL DEFAULT '{}'::jsonb, -- deklarative Widget-Konfig (Schema in docs/dashboard-config.schema.json)
+  oeffentliche_demo BOOLEAN NOT NULL DEFAULT false, -- ohne Anmeldung lesbar (ADR 0004), nachgetragen in Migration 0002
   erstellt_am   TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, name)
 );
@@ -142,8 +148,10 @@ CREATE TABLE api_schluessel (
   aktualisiert_am TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Row Level Security: jeder Nutzer sieht nur eigene Aufträge (wird in
--- Migration 0002 je Tabelle aktiviert; Grundsatz gehört zum Vertrag).
+-- Row Level Security: jeder Nutzer sieht nur eigene Aufträge. Aktiviert für
+-- alle zwölf Tabellen in Migration 0002 (ADR 0006). api_schluessel und
+-- ingest_tokens haben bewusst keine Regel und sind damit für die Anwendung
+-- vollständig gesperrt.
 
 -- Ingest-Token: erlaubt externen Sammlern das Einliefern in genau einen
 -- Auftrag (ADR 0002). Token wird nur als Hash gespeichert.
