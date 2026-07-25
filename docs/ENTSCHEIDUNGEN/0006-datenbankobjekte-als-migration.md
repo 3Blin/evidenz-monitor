@@ -1,5 +1,5 @@
 # ADR 0006: Zeilen-Sicherheit und Datenbankfunktionen gehören in Migrationen
-Datum: 25.07.2026 · Status: **Vorschlag, Freigabe ausstehend**
+Datum: 25.07.2026 · Status: angenommen · Freigegeben am: 25.07.2026
 
 ## Kontext
 Beim Übertragen des Projekts auf GitHub fiel auf, dass zwei in ADR 0004 und

@@ -1,5 +1,5 @@
 # ADR 0007: Einlieferung externer Sammler über eine Datenbankfunktion
-Datum: 25.07.2026 · Status: **Vorschlag, Freigabe ausstehend**
+Datum: 25.07.2026 · Status: angenommen · Freigegeben am: 25.07.2026
 
 ## Kontext
 ADR 0002 hat zwei Dinge beschlossen: zwei Kern-Adapter (RSS/Atom und Web-Abruf)

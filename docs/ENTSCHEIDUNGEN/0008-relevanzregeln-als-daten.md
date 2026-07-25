@@ -1,5 +1,5 @@
 # ADR 0008: Relevanzregeln sind Angaben am Auftrag, nicht Code
-Datum: 25.07.2026 · Status: **Vorschlag, Freigabe ausstehend**
+Datum: 25.07.2026 · Status: angenommen · Freigegeben am: 25.07.2026
 
 ## Kontext
 Im ersten echten Betrieb standen im Dashboard 24 Aussagen. Sechs davon hatten
@@ -95,6 +95,7 @@ Verworfene Alternativen:
 - Der Auswertungslauf meldet jetzt, wie viele Inhalte geprüft und wie viele
   aussortiert wurden. Vorher war nur die Zahl der Treffer sichtbar, wodurch der
   Fehler lange unbemerkt blieb.
-- Offen: Begriffe und das Feld `themenspezifisch` lassen sich nur über die
-  Datenbank ändern. Eine Oberfläche dafür setzt die Anmeldung voraus und ist
-  nicht Teil dieser Entscheidung.
+- Begriffe und das Feld `themenspezifisch` waren zunächst nur über die
+  Datenbank änderbar. Mit ADR 0009 sind sie in der Oberfläche bearbeitbar —
+  genau deshalb, weil eine Einstellung, die nur mit Datenbankzugang erreichbar
+  ist, nicht gepflegt wird.

@@ -1,5 +1,5 @@
 # ADR 0009: Anmeldung per Magic Link, Verwaltung in der Oberfläche
-Datum: 25.07.2026 · Status: **Vorschlag, Freigabe ausstehend**
+Datum: 25.07.2026 · Status: angenommen · Freigegeben am: 25.07.2026
 
 ## Kontext
 `ANFORDERUNGEN.md` nennt Mehrbenutzerfähigkeit mit Anmeldung "von Anfang an
