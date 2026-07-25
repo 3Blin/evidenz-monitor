@@ -1,0 +1,48 @@
+{
+  "name": "evidenz-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "migrate": "node-pg-migrate -m migrations up",
+    "audit:deps": "npm audit --audit-level=high"
+  },
+  "dependencies": {
+    "d3-force": "3.0.0",
+    "d3-selection": "3.0.0",
+    "next": "16.2.11",
+    "pg": "8.16.0",
+    "pino": "9.7.0",
+    "postcss": "8.5.23",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "rss-parser": "3.13.0",
+    "sharp": "0.35.3",
+    "zod": "3.25.67"
+  },
+  "devDependencies": {
+    "@types/d3-force": "3.0.10",
+    "@types/d3-selection": "3.0.11",
+    "@types/node": "22.15.30",
+    "@types/pg": "8.15.4",
+    "@types/react": "19.1.8",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "10.8.0",
+    "node-pg-migrate": "^9.0.0",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10"
+  },
+  "overrides": {
+    "postcss": "8.5.23",
+    "sharp": "0.35.3",
+    "minimatch": "10.2.5"
+  }
+}
