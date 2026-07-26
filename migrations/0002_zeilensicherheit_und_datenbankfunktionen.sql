@@ -7,8 +7,12 @@
 -- eine frisch migrierte Datenbank konnte das Dashboard nicht bedienen.
 -- Ebenso stand die in Migration 0001 angekündigte Zeilen-Sicherheit aus.
 --
--- Diese Migration ist bewusst wiederholbar (IF NOT EXISTS / DROP ... IF EXISTS),
+-- Diese Migration ist bewusst wiederholbar (IF NOT EXISTS, CREATE OR REPLACE),
 -- damit sie auch auf der bereits von Hand veränderten Datenbank durchläuft.
+-- Die Zugriffsregeln werden dabei nicht ergänzt, sondern ersetzt: Abschnitt 3
+-- entfernt zuerst alle vorhandenen Regeln auf den zwölf Tabellen, unabhängig
+-- von ihrem Namen. Sonst bliebe auf einer von Hand eingerichteten Datenbank
+-- eine zu weit gefasste Altregel wirksam.
 
 -- ---------------------------------------------------------------------------
 -- 1. Supabase-Bausteine, die lokal fehlen
@@ -79,35 +83,54 @@ ALTER TABLE analyse_laeufe     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_schluessel     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ingest_tokens      ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS eigene_auftraege ON auftraege;
+-- Erst alle vorhandenen Regeln auf diesen Tabellen entfernen, egal wie sie
+-- heißen. Ein "DROP POLICY IF EXISTS" je erwarteten Namen genügt nicht: Auf
+-- einer von Hand eingerichteten Datenbank heißen die Regeln anders (etwa
+-- 'eigene_analysen' statt 'eigene_analyse_laeufe'). Diese Migration würde dann
+-- zusätzliche Regeln daneben anlegen statt die alten zu ersetzen - und weil
+-- Zugriffsregeln mit ODER verknüpft werden, bliebe eine zu weit gefasste
+-- Altregel weiterhin wirksam. Genau das ist bei der ersten Anwendung auf die
+-- bestehende Datenbank aufgefallen.
+--
+-- Nach diesem Block gilt: Was hier steht, ist der vollständige Zugriffsschutz -
+-- nicht ein Zusatz zu unbekanntem Bestand.
+DO $$
+DECLARE regel record;
+BEGIN
+  FOR regel IN
+    SELECT tablename, policyname FROM pg_policies
+     WHERE schemaname = 'public'
+       AND tablename IN ('auftraege','quellen','abrufe','inhalte','meldungsgruppen',
+                         'inhalt_gruppen','aussagen','aussage_belege','reifegrad_verlauf',
+                         'analyse_laeufe','api_schluessel','ingest_tokens')
+  LOOP
+    EXECUTE format('DROP POLICY %I ON public.%I', regel.policyname, regel.tablename);
+  END LOOP;
+END $$;
+
 CREATE POLICY eigene_auftraege ON auftraege FOR ALL
   USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
-DROP POLICY IF EXISTS eigene_quellen ON quellen;
 CREATE POLICY eigene_quellen ON quellen FOR ALL
   USING (EXISTS (SELECT 1 FROM auftraege a WHERE a.id = quellen.auftrag_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM auftraege a WHERE a.id = quellen.auftrag_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_abrufe ON abrufe;
 CREATE POLICY eigene_abrufe ON abrufe FOR ALL
   USING (EXISTS (SELECT 1 FROM quellen q JOIN auftraege a ON a.id = q.auftrag_id
                  WHERE q.id = abrufe.quelle_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM quellen q JOIN auftraege a ON a.id = q.auftrag_id
                       WHERE q.id = abrufe.quelle_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_inhalte ON inhalte;
 CREATE POLICY eigene_inhalte ON inhalte FOR ALL
   USING (EXISTS (SELECT 1 FROM quellen q JOIN auftraege a ON a.id = q.auftrag_id
                  WHERE q.id = inhalte.quelle_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM quellen q JOIN auftraege a ON a.id = q.auftrag_id
                       WHERE q.id = inhalte.quelle_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_meldungsgruppen ON meldungsgruppen;
 CREATE POLICY eigene_meldungsgruppen ON meldungsgruppen FOR ALL
   USING (EXISTS (SELECT 1 FROM auftraege a WHERE a.id = meldungsgruppen.auftrag_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM auftraege a WHERE a.id = meldungsgruppen.auftrag_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_inhalt_gruppen ON inhalt_gruppen;
 CREATE POLICY eigene_inhalt_gruppen ON inhalt_gruppen FOR ALL
   USING (EXISTS (SELECT 1 FROM inhalte i JOIN quellen q ON q.id = i.quelle_id
                  JOIN auftraege a ON a.id = q.auftrag_id
@@ -116,26 +139,22 @@ CREATE POLICY eigene_inhalt_gruppen ON inhalt_gruppen FOR ALL
                       JOIN auftraege a ON a.id = q.auftrag_id
                       WHERE i.id = inhalt_gruppen.inhalt_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_aussagen ON aussagen;
 CREATE POLICY eigene_aussagen ON aussagen FOR ALL
   USING (EXISTS (SELECT 1 FROM auftraege a WHERE a.id = aussagen.auftrag_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM auftraege a WHERE a.id = aussagen.auftrag_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_aussage_belege ON aussage_belege;
 CREATE POLICY eigene_aussage_belege ON aussage_belege FOR ALL
   USING (EXISTS (SELECT 1 FROM aussagen s JOIN auftraege a ON a.id = s.auftrag_id
                  WHERE s.id = aussage_belege.aussage_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM aussagen s JOIN auftraege a ON a.id = s.auftrag_id
                       WHERE s.id = aussage_belege.aussage_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigener_reifegrad_verlauf ON reifegrad_verlauf;
 CREATE POLICY eigener_reifegrad_verlauf ON reifegrad_verlauf FOR ALL
   USING (EXISTS (SELECT 1 FROM aussagen s JOIN auftraege a ON a.id = s.auftrag_id
                  WHERE s.id = reifegrad_verlauf.aussage_id AND a.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM aussagen s JOIN auftraege a ON a.id = s.auftrag_id
                       WHERE s.id = reifegrad_verlauf.aussage_id AND a.user_id = auth.uid()));
 
-DROP POLICY IF EXISTS eigene_analyse_laeufe ON analyse_laeufe;
 CREATE POLICY eigene_analyse_laeufe ON analyse_laeufe FOR ALL
   USING (EXISTS (SELECT 1 FROM inhalte i JOIN quellen q ON q.id = i.quelle_id
                  JOIN auftraege a ON a.id = q.auftrag_id
