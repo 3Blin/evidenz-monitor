@@ -40,3 +40,11 @@
   Schreibzugriff über die vorhandenen Zugriffsregeln, eigene
   Datenbankfunktionen nur dort, wo diese nicht greifen können.
   `NEXT_PUBLIC_AUFTRAG` wird zur Vorauswahl, mehrere Demo-Aufträge sind möglich.
+- **0010 Belege zeigen, Netz lesbar machen, Regeln vorschlagen:** Nach der
+  ersten Nutzung behoben — die Knoten des Quellennetzes trieben aus der
+  Zeichenfläche (jetzt legt sich der Ausschnitt um sie), Aussagen nannten
+  weder Datum noch Verweis (jetzt klappen sie ihre Belege auf), und
+  Zusammenführungen entstanden nur bei ähnlichen Titeln (jetzt auch über
+  gemeinsame Kennungen wie eine KB- oder CVE-Nummer). Freigegebene Aufträge
+  lassen sich ins eigene Konto übernehmen, und die Relevanzregeln kann die KI
+  auf Wunsch mit Begründung vorschlagen — entschieden wird weiterhin von Hand.

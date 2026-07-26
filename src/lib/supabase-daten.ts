@@ -12,11 +12,37 @@ const knotenSchema = z.object({
   gewicht: z.number(), offiziell: z.boolean(),
 });
 const kantenSchema = z.object({ von: z.string(), nach: z.string(), art: z.string() });
+
+/**
+ * Ein einzelner Beleg. Verweis und Datum sind der Kern: Eine Belegangabe, die
+ * sich nicht nachschlagen lässt, ist keine.
+ *
+ * Optional gehalten, damit die Oberfläche auch gegen eine Datenbank läuft, auf
+ * der Migration 0005 noch nicht angewandt ist - sonst bliebe das Dashboard
+ * nach einer Veröffentlichung so lange leer, bis die Migration nachgezogen
+ * wurde.
+ */
+const belegSchema = z.object({
+  inhaltId: z.string(),
+  titel: z.string(),
+  url: z.string(),
+  herausgeber: z.string(),
+  quellentyp: z.string(),
+  veroeffentlichtAm: z.string().nullable(),
+  belegstelle: z.string().nullable(),
+  beziehung: z.string(),
+  klassifikation: z.string().nullable(),
+});
+
 const aussageSchema = z.object({
   id: z.string(), sachverhalt: z.string(), stufe: z.number().min(1).max(8),
   ausloeser: z.string(), belegAnzahl: z.number(),
   herausgeber: z.array(z.string()), seit: z.string().nullable(),
+  kontext: z.string().nullable().optional(),
+  belege: z.array(belegSchema).optional().default([]),
 });
+
+export type Beleg = z.infer<typeof belegSchema>;
 
 export const dashboardSchema = z.object({
   auftrag: z.object({ id: z.string(), name: z.string(), fragestellung: z.string() }),
