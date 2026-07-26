@@ -27,3 +27,6 @@ ein Protokoll.
 | Regelprüfung | `npm run lint` · `npm run typecheck` |
 | Sicherheitsprüfung | `npm run audit:deps` |
 | Datenbank aktualisieren | `npm run migrate` |
+| Ersten Auftrag anlegen | `npm run seed` |
+| Quellen abrufen | `npm run sammeln` |
+| Auswerten und bewerten | `npm run auswerten` |

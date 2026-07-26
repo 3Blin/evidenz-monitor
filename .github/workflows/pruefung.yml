@@ -1,2 +1,73 @@
-git clone https://github.com/3Blin/evidenz-monitor.git
-cd evidenz-monitor
+# Prüftor (Phase 4 des dev-guardrails-Workflows) als Pflichtprüfung.
+# Läuft bei jedem Push und jedem Pull Request. Schlägt ein Schritt fehl,
+# darf nicht zusammengeführt werden - die Prüfung wird nicht abgeschaltet,
+# sondern der Befund behoben.
+name: Pruefung
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: evidenz
+          POSTGRES_PASSWORD: pruefung
+          POSTGRES_DB: evidenz
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://evidenz:pruefung@localhost:5432/evidenz
+      # Muss genau 32 Bytes lang sein (base64), sonst lehnt src/lib/krypto.ts
+      # ihn ab. Der vorherige Wert hatte 35 Bytes und war damit unbrauchbar -
+      # aufgefallen ist es erst, als ein Test wirklich damit verschlüsselte.
+      BYOK_ENCRYPTION_KEY: cHJ1ZWZ1bmdzc2NobHVlc3NlbC0zMi1ieXRlcy0hISE=
+      LOG_LEVEL: error
+      NEXT_PUBLIC_SUPABASE_URL: https://beispiel.supabase.co
+      NEXT_PUBLIC_SUPABASE_KEY: sb_publishable_pruefung
+      NEXT_PUBLIC_AUFTRAG: db0ec997-7fa1-4cb7-8e5d-3124446e1f60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Abhaengigkeiten installieren
+        run: npm ci
+
+      - name: 1 Typpruefung
+        run: npm run typecheck
+
+      - name: 2 Linter
+        run: npm run lint
+
+      - name: Datenbankstruktur anlegen
+        run: npm run migrate
+
+      - name: 3+4 Tests und Testabdeckung
+        run: npm run coverage
+
+      - name: 5 Sicherheitspruefung Abhaengigkeiten
+        run: npm run audit:deps
+
+      - name: 5b Suche nach Zugangsdaten im Code
+        run: |
+          if grep -rEn "sk-ant-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----" src scripts tests; then
+            echo "Zugangsdaten im Code gefunden"; exit 1
+          fi
+          echo "keine Zugangsdaten im Code"
+
+      - name: 6 Anwendung bauen
+        run: npm run build

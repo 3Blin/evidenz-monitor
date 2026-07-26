@@ -26,7 +26,14 @@ interface Punkt extends SimulationNodeDatum {
   id: string; label: string; quellentyp: string; gewicht: number; offiziell: boolean;
 }
 
-export function DashboardAnsicht({ daten }: { daten: DashboardDaten }) {
+export function DashboardAnsicht({
+  daten,
+  kopf,
+}: {
+  daten: DashboardDaten;
+  /** Auftragsauswahl und Anmeldezustand, von der Seite hereingegeben. */
+  kopf?: React.ReactNode;
+}) {
   const [gewaehlt, setGewaehlt] = useState<string | null>(null);
   const flaeche = useRef<HTMLDivElement>(null);
   const [punkte, setPunkte] = useState<Punkt[]>([]);
@@ -66,6 +73,7 @@ export function DashboardAnsicht({ daten }: { daten: DashboardDaten }) {
 
   return (
     <main className="huelle">
+      {kopf}
       <header>
         <div className="eyebrow"><span className="puls" /> BEOBACHTUNGSAUFTRAG · AKTIV</div>
         <h1>{daten.auftrag.name}</h1>

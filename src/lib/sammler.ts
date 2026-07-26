@@ -63,20 +63,28 @@ export async function sammleQuelle(
   }
 }
 
-/** Ruft alle aktiven Quellen eines Auftrags ab. Einzelfehler stoppen nichts. */
+/**
+ * Ruft alle aktiven Quellen eines Auftrags ab. Einzelfehler stoppen nichts.
+ *
+ * Quellen vom Typ 'extern_agent' bleiben ausgenommen: Deren Inhalte liefert ein
+ * externer Sammler über die Ingest-Schnittstelle ein (ADR 0002). Würde der
+ * Abrufer sie anfassen, entstünde bei jedem Lauf ein Fehlereintrag für etwas,
+ * das gar nicht abgerufen werden soll.
+ */
 export async function sammleAuftrag(
   db: Pool,
   auftragId: string,
-  adapterFuer: (typ: string) => QuellenAdapter,
+  adapterFuer: (quelle: QuelleZeile) => QuellenAdapter,
   correlationId: string,
 ): Promise<readonly AbrufErgebnis[]> {
   const { rows } = await db.query<QuelleZeile>(
-    `SELECT id, url, typ, herausgeber FROM quellen WHERE auftrag_id=$1 AND aktiv=true`,
+    `SELECT id, url, typ, herausgeber FROM quellen
+      WHERE auftrag_id=$1 AND aktiv=true AND typ <> 'extern_agent'`,
     [auftragId],
   );
   const ergebnisse: AbrufErgebnis[] = [];
   for (const quelle of rows) {
-    ergebnisse.push(await sammleQuelle(db, quelle, adapterFuer(quelle.typ), correlationId));
+    ergebnisse.push(await sammleQuelle(db, quelle, adapterFuer(quelle), correlationId));
   }
   return ergebnisse;
 }

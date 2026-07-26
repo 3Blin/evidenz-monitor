@@ -11,9 +11,14 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "migrate": "node-pg-migrate -m migrations up",
+    "seed": "node scripts/seed.mjs",
+    "sammeln": "tsx scripts/sammeln.job.ts",
+    "auswerten": "tsx scripts/auswerten.job.ts",
     "audit:deps": "npm audit --audit-level=high"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.8",
     "d3-force": "3.0.0",
     "d3-selection": "3.0.0",
     "next": "16.2.11",

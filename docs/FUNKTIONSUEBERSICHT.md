@@ -2,21 +2,51 @@
 
 Was die Software kann, welcher Baustein es macht und wozu. Ohne Fachbegriffe.
 
+## Anmelden
+**Macht:** Anmeldung per Anmeldelink an die eigene E-Mail-Adresse. Kein Passwort.
+**Existiert, damit:** jeder nur seine eigenen Aufträge sieht und bearbeiten kann.
+Ein Passwort, das schlecht gewählt oder wiederverwendet wird, gibt es damit nicht
+— und auch kein Zurücksetzen-Verfahren, das selbst angreifbar wäre.
+**Baustein:** Anmeldung (Supabase Auth)
+
 ## Beobachtungsaufträge verwalten
 **Macht:** Speichert, was beobachtet werden soll — Thema, Fragestellung,
-Suchbegriffe, Quellen, Abstand zwischen Abrufen.
+Suchbegriffe, Relevanzregeln, Quellen, Abstand zwischen Abrufen. Angemeldet ist
+das alles in der Oberfläche unter „Verwalten" bearbeitbar; neue Aufträge legt man
+dort ebenfalls an.
 **Existiert, damit:** neue Themen ohne Programmierung entstehen. Ein Auftrag
 ist ein Eintrag in der Datenbank, kein Code. Windows 11 ist nur der erste
-Eintrag; Wetterlage, Preise oder Ferienhäuser funktionieren genauso.
-**Baustein:** Auftragsverwaltung · **Tests:** dashboard-daten.test.ts
+Eintrag; Sicherheitslücken, Wetterlage oder Preise funktionieren genauso — die
+Grundeinrichtung legt bewusst zwei Aufträge aus verschiedenen Bereichen an.
+**Baustein:** Auftragsverwaltung · **Tests:** dashboard-funktion.test.ts (8 Tests),
+verwaltung-funktionen.test.ts (14 Tests)
+
+## Mehrere Aufträge nebeneinander zeigen
+**Macht:** Oben in der Oberfläche stehen alle Aufträge zur Auswahl, die ohne
+Anmeldung lesbar sind — angemeldet zusätzlich die eigenen.
+**Existiert, damit:** sichtbar wird, dass der Kern kein Thema kennt. Vorher zeigte
+die Oberfläche genau einen fest eingestellten Auftrag.
+**Baustein:** Auftragsverwaltung · **Tests:** auftragsliste.test.ts (11 Tests)
 
 ## Quellen abrufen
 **Macht:** Holt in festen Abständen neue Beiträge von den hinterlegten
-Quellen (RSS-Feeds und Webseiten), speichert Titel, Autor, Datum und einen
-Auszug — nie den ganzen Text, wegen des Urheberrechts.
+Quellen, speichert Titel, Autor, Datum und einen Auszug — nie den ganzen
+Text, wegen des Urheberrechts. Zwei Zugangswege: Feeds (RSS/Atom) und
+einzelne Webseiten. Welcher Weg genommen wird, entscheidet die Adresse der
+Quelle, nicht die Art des Herausgebers.
 **Existiert, damit:** neue Informationen automatisch hereinkommen, ohne dass
 jemand Seiten manuell durchsucht.
-**Baustein:** Quellen-Abrufer · **Tests:** sammler.test.ts (5 Tests)
+**Baustein:** Quellen-Abrufer · **Tests:** sammler.test.ts (6 Tests),
+quellen-adapter.test.ts (19 Tests), quellen-registrierung.test.ts (4 Tests)
+
+## Webseiten ohne Feed lesen
+**Macht:** Liest eine einzelne Webseite — etwa eine Status-Seite oder einen
+Support-Artikel des Herstellers — und holt Titel, Autor, Datum und
+Fließtext heraus. Skripte, Stile und eingebettete Inhalte werden vorher
+entfernt und niemals ausgeführt.
+**Existiert, damit:** gerade die Bestätigungskanäle nutzbar sind. Die
+wichtigsten offiziellen Meldungen erscheinen auf Seiten ohne Feed.
+**Baustein:** Quellen-Abrufer (Web-Adapter) · **Tests:** quellen-adapter.test.ts
 
 ## Ausfälle verkraften
 **Macht:** Wenn eine Quelle nicht erreichbar ist, wird der Fehler
@@ -33,13 +63,26 @@ unabhängige Bestätigungen zählt. Das ist der häufigste Fehler bei
 automatischer Nachrichtenauswertung.
 **Baustein:** Dublettenerkennung · **Tests:** dedup.test.ts (11 Tests)
 
+## Unpassende Meldungen aussortieren
+**Macht:** Prüft für jeden Beitrag, ob er zum Auftrag gehört. Dafür gelten drei
+Angaben am Auftrag: Begriffe, die vorkommen **müssen**, Begriffe, die ihn
+**ausschließen**, und wie viele der Suchbegriffe mindestens treffen müssen.
+Begriffe zählen nur am Wortanfang, damit „KB" die Kennung „KB5000001" findet,
+aber nicht mitten in einem fremden Wort trifft. Quellen, die schon auf das
+Thema begrenzt sind — ein reines Windows-Forum etwa —, müssen das Thema im Text
+nicht wiederholen. Jede Entscheidung wird begründet mitgeschrieben.
+**Existiert, damit:** im Dashboard steht, was zum Auftrag gehört. Vorher genügte
+ein einziges allgemeines Wort wie „Updates", wodurch ein Viertel der Aussagen
+nichts mit dem Thema zu tun hatte.
+**Baustein:** Relevanzprüfung · **Tests:** relevanz.test.ts (17 Tests)
+
 ## Meldungen einordnen (ohne KI)
 **Macht:** Bestimmt anhand von Zeitpunkt, Herausgeber und Titelähnlichkeit,
 welcher Beitrag die Ursprungsmeldung ist und welche Übernahmen oder
 eigenständige Bestätigungen sind. Jede Einordnung wird begründet.
 **Existiert, damit:** das System auch ohne hinterlegten KI-Schlüssel
 nachvollziehbare Ergebnisse liefert.
-**Baustein:** Vorklassifikation · **Tests:** vorklassifikation.test.ts
+**Baustein:** Vorklassifikation · **Tests:** vorklassifikation.test.ts (10 Tests)
 
 ## Meldungen einordnen (mit KI, eigener Schlüssel)
 **Macht:** Schickt einen Beitrag mit einem festen Analyse-Auftrag an den
@@ -81,7 +124,7 @@ wirklich unabhängig sind oder nur voneinander abschreiben.
 **Macht:** Listet rechts die Aussagen mit Stufe, Begründung, Anzahl der
 Belege und den beteiligten Herausgebern.
 **Existiert, damit:** jede Anzeige auf ihre Quellen zurückführbar bleibt.
-**Baustein:** Dashboard · **Tests:** dashboard-daten.test.ts
+**Baustein:** Dashboard · **Tests:** dashboard-funktion.test.ts
 
 ## Schnittstelle für Apps und eigene Agenten
 **Macht:** Stellt die Dashboard-Daten unter `/api/v1/dashboard` bereit;
@@ -90,9 +133,34 @@ Eingaben werden geprüft, Fehler bekommen eine Kennnummer zum Nachverfolgen.
 geprüften Wege nutzen wie die Weboberfläche.
 **Baustein:** API-Schicht
 
+## Inhalte von eigenen Sammlern annehmen
+**Macht:** Nimmt unter `/api/v1/ingest` Beiträge an, die ein eigener Agent
+oder Ablauf (n8n und Ähnliches) eingeliefert hat. Ein Token, das zu genau
+einem Beobachtungsauftrag gehört, weist die Berechtigung nach. Die Inhalte
+laufen danach durch dieselbe Dublettenerkennung, Einordnung und Bewertung
+wie selbst abgerufene.
+**Existiert, damit:** Kanäle mit Anmeldezwang nutzbar bleiben, ohne dass
+riskante Beschaffung in die Software selbst wandert. Eingeliefertes ist als
+solches gekennzeichnet und wird in der Quellenbewertung entsprechend
+eingestuft.
+**Baustein:** API-Schicht · **Tests:** ingest.test.ts (21 Tests)
+
+## Fremde Daten voneinander trennen
+**Macht:** Die Datenbank selbst gibt jedem nur die Daten seiner eigenen
+Beobachtungsaufträge heraus. Verschlüsselte KI-Schlüssel und Ingest-Token
+sind für die Anwendung vollständig gesperrt. Ein einzelner Auftrag kann
+ausdrücklich als öffentlich lesbare Vorführung freigegeben werden.
+**Existiert, damit:** der Schutz auch dann gilt, wenn jemand die
+Schnittstelle direkt anspricht, statt die Weboberfläche zu benutzen. Läge
+die Prüfung nur in der Anwendung, wäre sie am Vorbeiweg wirkungslos.
+**Baustein:** Datenbank (Zeilen-Sicherheit) · **Tests:** zeilensicherheit.test.ts (8 Tests)
+
 ## Zugangsschlüssel schützen
 **Macht:** Verschlüsselt den KI-Schlüssel des Nutzers vor dem Speichern und
-filtert ihn automatisch aus allen Protokollen.
+filtert ihn automatisch aus allen Protokollen. Verschlüsselt wird auf dem
+Server, nie im Browser. Der Schlüssel wird nie wieder herausgegeben — auch das
+Formular kann ihn nicht anzeigen, nur ersetzen.
 **Existiert, damit:** ein Datenbank- oder Protokollzugriff den Schlüssel
 nicht preisgibt.
-**Baustein:** Verschlüsselung · **Tests:** fundament.test.ts
+**Baustein:** Verschlüsselung · **Tests:** fundament.test.ts,
+verwaltung-funktionen.test.ts

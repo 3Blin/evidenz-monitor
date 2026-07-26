@@ -17,6 +17,11 @@ Für Menschen ohne Programmierkenntnisse. Befehle im Projektordner ausführen.
      KI-Schlüssel neu hinterlegen.
    - `LOG_LEVEL` — `info` im Normalbetrieb, `debug` zur Fehlersuche
 4. Datenbankstruktur anlegen: `npm run migrate`
+   Das legt Tabellen, Zugriffsregeln und die Datenbankfunktionen an. Ohne
+   diesen Schritt bleibt das Dashboard leer.
+5. Ersten Beobachtungsauftrag anlegen: `npm run seed`
+   Ohne einen Auftrag hat der Sammellauf nichts zu tun und bricht mit einer
+   Meldung ab.
 
 Fehlt ein Pflichtwert, startet die Anwendung nicht und sagt genau, welcher.
 
@@ -32,11 +37,114 @@ Im Terminalfenster `Strg + C`.
 
 ## Quellen abrufen
 
-Ein Sammellauf: `node scripts/sammeln.mjs`
-Auswertung (Gruppierung, Bewertung): `npx vite-node scripts/auswerten.job.ts`
+Ein Sammellauf: `npm run sammeln`
+Auswertung (Gruppierung, Bewertung): `npm run auswerten`
 
 Im Dauerbetrieb übernimmt das ein Zeitplan (z. B. ein Vercel-Cron-Auftrag)
 im Abstand, der im Auftrag hinterlegt ist.
+
+Ob eine Quelle als Feed oder als Webseite gelesen wird, entscheidet ihre
+Adresse: Endet sie auf `.rss`, `.xml`, `.atom` oder enthält sie `/feed`,
+wird sie als Feed gelesen, sonst als einzelne Webseite.
+
+## Inhalte von einem eigenen Sammler einliefern
+
+Kanäle mit Anmeldezwang ruft die Software nicht selbst ab. Ein eigener
+Agent kann sie einliefern. Dafür braucht er ein Token, das zu genau einem
+Beobachtungsauftrag gehört. Anlegen (Token selbst ausdenken, mindestens 24
+Zeichen, danach **nicht mehr auslesbar** — die Datenbank speichert nur den
+Prüfwert):
+
+```
+TOKEN=$(node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))")
+echo "Token merken: $TOKEN"
+psql "$DATABASE_URL" -c "INSERT INTO ingest_tokens (auftrag_id,bezeichnung,token_hash)
+  VALUES ('DIE-AUFTRAGSKENNUNG','Mein Sammler',
+          encode(sha256(convert_to('$TOKEN','utf8')),'hex'));"
+```
+
+Einliefern:
+
+```
+curl -X POST https://MEINE-ADRESSE/api/v1/ingest \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"quelle":{"url":"https://sammler.example/kanal","herausgeber":"Mein Sammler"},
+       "inhalte":[{"url":"https://beispiel.example/1","titel":"Meldung",
+                   "auszug":"Kurzer Auszug","veroeffentlichtAm":"2026-07-25T10:00:00Z"}]}'
+```
+
+Höchstens 50 Inhalte je Anfrage. Die Antwort nennt, wie viele angenommen
+und wie viele als Dublette übersprungen wurden. Ein Token abschalten:
+`UPDATE ingest_tokens SET aktiv=false WHERE bezeichnung='Mein Sammler';`
+
+## Anmelden und verwalten
+
+Anmeldung läuft ohne Passwort: Auf `/anmelden` die E-Mail-Adresse eintragen, den
+zugeschickten Link öffnen, fertig. Der Link gilt nur kurz und nur einmal.
+
+Angemeldet stehen unter „Verwalten" zur Verfügung:
+
+- **Aufträge anlegen und bearbeiten** — Name, Fragestellung, Suchbegriffe,
+  Pflicht- und Ausschlussbegriffe, nötige Trefferzahl, Abrufabstand, ob der
+  Auftrag aktiv ist und ob er ohne Anmeldung lesbar sein soll.
+- **Quellen verwalten** — hinzufügen, abschalten, als themenspezifisch
+  markieren, löschen. Abschalten statt löschen erhält die bisherigen Beiträge
+  als Belege.
+- **Eigener KI-Zugang** — der Schlüssel wird auf dem Server verschlüsselt und
+  nie wieder herausgegeben. Ein neuer Eintrag ersetzt den alten.
+
+Änderungen an den Relevanzregeln wirken beim nächsten `npm run auswerten`. Ein
+neuer Sammellauf ist dafür nicht nötig, die Inhalte sind schon da.
+
+## Suchbegriffe und Relevanz über die Datenbank anpassen
+
+Dasselbe geht auch ohne Oberfläche — etwa in einem Skript oder wenn die
+Anmeldung noch nicht eingerichtet ist. Alle Angaben gehören zum Auftrag; der
+Programmcode wird dafür nicht angefasst.
+
+Aktuellen Stand ansehen:
+
+```
+psql "$DATABASE_URL" -c "SELECT name, suchbegriffe, pflichtbegriffe,
+  ausschlussbegriffe, mindest_treffer FROM auftraege;"
+```
+
+Ändern, zum Beispiel:
+
+```
+psql "$DATABASE_URL" -c "UPDATE auftraege SET
+  suchbegriffe = ARRAY['Windows 11','25H2','Update','KB','Treiber','Bluescreen'],
+  pflichtbegriffe = ARRAY['Windows'],
+  ausschlussbegriffe = ARRAY['Anzeige'],
+  mindest_treffer = 1
+  WHERE name = 'Windows 11 Updates & Probleme';"
+```
+
+Was die vier Angaben bedeuten:
+
+- **suchbegriffe** — davon müssen mindestens `mindest_treffer` viele vorkommen.
+- **pflichtbegriffe** — *alle* müssen vorkommen, sonst fliegt der Beitrag raus.
+  Das ist der wirksamste Hebel gegen unpassende Meldungen.
+- **ausschlussbegriffe** — kommt einer vor, ist der Beitrag raus, egal was sonst
+  passt.
+- **mindest_treffer** — höher setzen, wenn einzelne allgemeine Begriffe zu viel
+  hereinlassen.
+
+Begriffe treffen nur am **Wortanfang**: „KB" findet „KB5000001", „Update" findet
+„Updates", aber keiner von beiden trifft mitten in einem fremden Wort.
+
+Bei Quellen, die schon auf das Thema begrenzt sind (ein reines Windows-Forum,
+ein Feed mit Suchabfrage), sollten die Pflichtbegriffe nicht verlangt werden —
+Forenbeiträge schreiben selten dazu, worum es geht:
+
+```
+psql "$DATABASE_URL" -c "UPDATE quellen SET themenspezifisch = true
+  WHERE url LIKE '%elevenforum%' OR url LIKE '%r/Windows11%';"
+```
+
+Nach jeder Änderung `npm run auswerten` — der Lauf meldet, wie viele Inhalte
+geprüft und wie viele aussortiert wurden. Der Sammellauf ist dafür nicht nötig,
+die Inhalte sind schon da.
 
 ## Sichern
 
@@ -91,9 +199,12 @@ zurückgespielt wurde, ist keine Sicherung.
 
 ## Grenzen im aktuellen Stand
 
-- Anmeldung/Mehrbenutzerbetrieb ist im Datenmodell vorbereitet, die
-  Supabase-Anbindung ist noch nicht eingerichtet — vor der Veröffentlichung
-  im Internet zwingend nachziehen.
+- Anmeldung und Mehrbenutzerbetrieb sind eingebaut (Magic Link, ADR 0009). Im
+  Supabase-Projekt müssen dafür Site-URL und Rückkanal-Adressen eingetragen
+  sein, siehe docs/VEROEFFENTLICHEN.md — sonst führt der Anmeldelink ins Leere.
+- Aufträge mit `oeffentliche_demo` sind ohne Anmeldung lesbar. Vor dem echten
+  Produktivbetrieb je Auftrag bestätigen, dass er keine persönlichen Angaben
+  enthält, oder das Feld abschalten.
 - Die KI-Analyse ist gebaut und getestet, aber noch nicht in den
   Sammellauf eingehängt; bis dahin arbeitet die Vorklassifikation.
 - Benachrichtigungen, Widerspruchsanzeige und Handlungsempfehlungen sind
