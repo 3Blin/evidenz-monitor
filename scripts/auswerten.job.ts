@@ -6,7 +6,7 @@
  * lässt sich das Skript mit tsx ausführen (Aufruf: npm run auswerten).
  */
 import pg from "pg";
-import { gruppiere, klassifiziereGruppe, type VorInhalt } from "../src/lib/vorklassifikation";
+import { gruppiereMitBegruendung, klassifiziereGruppe, type VorInhalt } from "../src/lib/vorklassifikation";
 import { ermittleReifegrad, REGEL_VERSION, type Beleg } from "../src/lib/reifegrad";
 import { pruefeRelevanz, type RelevanzRegeln } from "../src/lib/relevanz";
 
@@ -74,13 +74,16 @@ async function werteAus(db: pg.Pool, auftrag: AuftragZeile): Promise<void> {
     await db.query("DELETE FROM meldungsgruppen WHERE auftrag_id=$1", [auftrag.id]);
     await db.query("DELETE FROM aussagen WHERE auftrag_id=$1", [auftrag.id]);
 
-    const gruppen = gruppiere(inhalte);
-    process.stdout.write(`Meldungsgruppen: ${gruppen.length}\n`);
+    const gruppen = gruppiereMitBegruendung(inhalte);
+    const mehrfach = gruppen.filter((g) => g.inhalte.length > 1).length;
+    process.stdout.write(
+      `Meldungsgruppen: ${gruppen.length} · davon mit mehreren Belegen: ${mehrfach}\n`,
+    );
 
     const nachId = new Map(inhalte.map((i) => [i.inhaltId, i]));
     let anzahl = 0;
 
-    for (const gruppe of gruppen) {
+    for (const { inhalte: gruppe, begruendung: gruppenGrund } of gruppen) {
       const erster = gruppe[0];
       if (!erster) continue;
       const befunde = klassifiziereGruppe(gruppe);
@@ -97,7 +100,8 @@ async function werteAus(db: pg.Pool, auftrag: AuftragZeile): Promise<void> {
          VALUES ($1,$2,$3,$4,$5) RETURNING id`,
         [auftrag.id, erster.titel.slice(0, 500), [], erster.veroeffentlichtAm,
          `Deterministische Vorklassifikation; KI-Analyse noch nicht ausgeführt.` +
-         ` Relevanz: ${relevanzBegruendungen.get(erster.inhaltId) ?? "ohne Angabe"}`],
+         ` Relevanz: ${relevanzBegruendungen.get(erster.inhaltId) ?? "ohne Angabe"}.` +
+         ` Zusammenführung: ${gruppenGrund}`],
       );
       const aussageId = a[0]?.id;
       if (!aussageId) continue;
