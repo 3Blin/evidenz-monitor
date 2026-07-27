@@ -56,12 +56,16 @@ Im Dashboard steht dann "X Quellen nicht erreichbar".
 **Baustein:** Quellen-Abrufer · **Tests:** sammler.test.ts
 
 ## Doppelte Meldungen erkennen
-**Macht:** Erkennt exakt gleiche Beiträge über einen Prüfwert und
-inhaltsgleiche Meldungen über Titelähnlichkeit; ordnet sie einer Gruppe zu.
+**Macht:** Erkennt exakt gleiche Beiträge über einen Prüfwert, inhaltsgleiche
+Meldungen über Titelähnlichkeit und — seit ADR 0010 — Beiträge über dieselbe
+Sache an einer **gemeinsamen Kennung**: einer KB-Nummer, einer CVE-Nummer, einer
+Buildnummer. Zwei Forenbeiträge zu „KB5094126" gehören zusammen, auch wenn ihre
+Titel nur elf Prozent Übereinstimmung haben.
 **Existiert, damit:** dieselbe Nachricht in zehn Portalen nicht als zehn
-unabhängige Bestätigungen zählt. Das ist der häufigste Fehler bei
-automatischer Nachrichtenauswertung.
-**Baustein:** Dublettenerkennung · **Tests:** dedup.test.ts (11 Tests)
+unabhängige Bestätigungen zählt — und umgekehrt zwei Berichte über denselben
+Vorgang nicht als zwei unverbundene Einzelhinweise stehen bleiben.
+**Baustein:** Dublettenerkennung · **Tests:** dedup.test.ts (11),
+kennungen.test.ts (16), gruppierung.test.ts (10)
 
 ## Unpassende Meldungen aussortieren
 **Macht:** Prüft für jeden Beitrag, ob er zum Auftrag gehört. Dafür gelten drei
@@ -114,17 +118,25 @@ Erkenntnis wurde — und wann. Überschreiben ist technisch ausgeschlossen.
 
 ## Quellen-Graph anzeigen
 **Macht:** Zeigt jede Quelle als Punkt; die Größe entspricht der Zahl ihrer
-Beiträge, Linien zeigen, wer von wem übernommen hat. Offizielle Quellen
-haben einen zusätzlichen Ring.
+Beiträge, beschriftete Linien zeigen, wer von wem übernommen hat. Offizielle
+Quellen haben einen zusätzlichen Ring. Der Ausschnitt legt sich um die Knoten,
+sodass immer alle sichtbar sind; ziehen, vergrößern und zurücksetzen geht mit
+Maus, Finger und Tastatur. Ein Klick auf eine Quelle zeigt nur ihre Aussagen.
+Gibt es keine Verknüpfungen, sagt die Ansicht das ausdrücklich.
 **Existiert, damit:** auf einen Blick sichtbar ist, ob viele Quellen
 wirklich unabhängig sind oder nur voneinander abschreiben.
-**Baustein:** Dashboard · **Tests:** graph.test.ts (7 Tests)
+**Baustein:** Dashboard · **Tests:** graph.test.ts (7), netz-layout.test.ts (15)
 
 ## Bewertungspanel anzeigen
-**Macht:** Listet rechts die Aussagen mit Stufe, Begründung, Anzahl der
-Belege und den beteiligten Herausgebern.
-**Existiert, damit:** jede Anzeige auf ihre Quellen zurückführbar bleibt.
-**Baustein:** Dashboard · **Tests:** dashboard-funktion.test.ts
+**Macht:** Listet rechts die Aussagen mit Stufe, Begründung, Alter und den
+beteiligten Herausgebern. Ein Klick klappt die Belege auf: je Beleg der
+Herausgeber, seine Rolle (Erstmeldung, Übernahme, unabhängige Bestätigung), das
+Veröffentlichungsdatum, die Fundstelle im Text und ein Verweis auf den Beitrag.
+Die Reifegrad-Leiter filtert nach Stufe.
+**Existiert, damit:** jede Anzeige auf ihre Quellen zurückführbar bleibt — und
+zwar nachschlagbar. Eine Belegangabe ohne Verweis ist keine.
+**Baustein:** Dashboard · **Tests:** dashboard-funktion.test.ts,
+belege-und-uebernahme.test.ts (12)
 
 ## Schnittstelle für Apps und eigene Agenten
 **Macht:** Stellt die Dashboard-Daten unter `/api/v1/dashboard` bereit;
@@ -164,3 +176,22 @@ Formular kann ihn nicht anzeigen, nur ersetzen.
 nicht preisgibt.
 **Baustein:** Verschlüsselung · **Tests:** fundament.test.ts,
 verwaltung-funktionen.test.ts
+
+## Regeln von der KI vorschlagen lassen
+**Macht:** Erzeugt aus Name und Fragestellung einen Vorschlag für Suchbegriffe,
+Pflicht- und Ausschlussbegriffe, die nötige Trefferzahl und mögliche Quellen —
+mit einer Begründung in Alltagssprache. Nutzt den eigenen hinterlegten
+KI-Zugang. Gespeichert wird nichts von selbst: Der Vorschlag füllt die Felder,
+gespeichert wird erst auf Knopfdruck.
+**Existiert, damit:** der Einstieg keine Fachkenntnis über das Regelwerk
+voraussetzt. Die Felder bleiben trotzdem sichtbar und änderbar — wer sie nie
+sieht, kann ein schlechtes Ergebnis nicht verbessern.
+**Baustein:** KI-Anbindung · **Tests:** ki-vorschlag.test.ts (17 Tests)
+
+## Freigegebenen Auftrag übernehmen
+**Macht:** Kopiert einen öffentlich freigegebenen Auftrag samt Quellen und
+Relevanzregeln ins eigene Konto. Ohne die gesammelten Beiträge des Originals,
+und ohne selbst wieder öffentlich zu sein.
+**Existiert, damit:** ein Beispiel nicht nur anzusehen, sondern zu benutzen ist.
+Vorher verwies die Verwaltung auf einen Fall, den man nicht bearbeiten konnte.
+**Baustein:** Verwaltung · **Tests:** belege-und-uebernahme.test.ts

@@ -7,6 +7,7 @@
 import { redirect } from "next/navigation";
 import { angemeldeterNutzer, supabaseAufServer } from "@/lib/supabase-server";
 import { AuftragsListe } from "./auftrags-liste";
+import { DemoListe, type DemoAuftrag } from "./demo-liste";
 import { SchluesselFormular, type SchluesselZustand } from "./schluessel-formular";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,13 @@ export default async function Verwalten() {
 
   const { data: schluessel } = await supabase.rpc("api_schluessel_zustand");
 
+  // Freigegebene Aufträge fremder Konten. Sie erscheinen in der Liste oben
+  // nicht - die Zeilen-Sicherheit gibt nur eigene heraus - und brauchen
+  // deshalb einen eigenen Abschnitt samt Weg ins eigene Konto.
+  const { data: demos } = await supabase.rpc("oeffentliche_auftraege");
+  const eigeneIds = new Set((auftraege ?? []).map((a) => a.id));
+  const fremdeDemos = ((demos ?? []) as DemoAuftrag[]).filter((d) => !eigeneIds.has(d.id));
+
   return (
     <main className="huelle">
       <div className="kopfzeile">
@@ -51,8 +59,11 @@ export default async function Verwalten() {
       <p className="eyebrow">VERWALTUNG</p>
       <h1>Beobachtungsaufträge</h1>
       <p className="frage">
-        Ein Auftrag ist ein Datensatz, kein Programm. Thema, Fragestellung, Quellen
-        und Relevanzregeln legst du hier fest — Windows 11 ist nur der erste Fall.
+        Ein Auftrag beschreibt, was dauerhaft beobachtet werden soll: Thema,
+        Fragestellung, Quellen und die Regeln, nach denen ein Beitrag als
+        einschlägig gilt. Alles davon sind Angaben, kein Programmcode — dasselbe
+        System trägt einen Auftrag über Sicherheitslücken so gut wie einen über
+        Personalien oder Preise.
       </p>
 
       {auftragsFehler ? (
@@ -62,6 +73,11 @@ export default async function Verwalten() {
       ) : (
         <AuftragsListe auftraege={(auftraege ?? []) as AuftragZeile[]} />
       )}
+
+      <DemoListe
+        auftraege={fremdeDemos}
+        bereitsUebernommen={(auftraege ?? []).map((a) => a.name)}
+      />
 
       <SchluesselFormular zustand={(schluessel ?? { hinterlegt: false }) as SchluesselZustand} />
     </main>

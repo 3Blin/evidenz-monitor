@@ -61,8 +61,9 @@ export function AuftragsListe({ auftraege }: { auftraege: readonly AuftragZeile[
         <h2>Vorhandene Aufträge</h2>
         {auftraege.length === 0 ? (
           <p className="frage">
-            Noch kein eigener Auftrag. Leg unten einen an — zum Beispiel zu einem
-            ganz anderen Thema als Windows.
+            Noch kein eigener Auftrag. Leg unten einen an — oder übernimm weiter
+            unten einen der freigegebenen Beispielaufträge, um an einem fertig
+            eingerichteten Fall zu sehen, wie die Teile zusammenspielen.
           </p>
         ) : (
           <div className="tabelle-rollbar">

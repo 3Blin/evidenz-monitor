@@ -3,9 +3,12 @@
 -- Nutzerkonten selbst liegen in Supabase Auth (auth.users); hier nur Verweise.
 --
 -- Diese Datei beschreibt die Tabellen. Zeilen-Sicherheit und die
--- Datenbankfunktionen (dashboard_daten, inhalt_einliefern) stehen in
--- migrations/0002_zeilensicherheit_und_datenbankfunktionen.sql — sie gehören
--- laut ADR 0006 genauso in Migrationen wie die Tabellen selbst.
+-- Datenbankfunktionen stehen in den Migrationen — sie gehören laut ADR 0006
+-- genauso dorthin wie die Tabellen selbst:
+--   0002  Zeilen-Sicherheit, dashboard_daten, inhalt_einliefern
+--   0003  Relevanzregeln (Spalten an auftraege und quellen)
+--   0004  oeffentliche_auftraege, api_schluessel_speichern/zustand/entfernen
+--   0005  dashboard_daten mit Belegen, auftrag_uebernehmen, api_schluessel_geheim
 
 -- Beobachtungsauftrag: themenneutraler Datensatz, KEIN Code.
 CREATE TABLE auftraege (
