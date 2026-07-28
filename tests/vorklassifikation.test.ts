@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { klassifiziereGruppe, gruppiere, type VorInhalt } from "../src/lib/vorklassifikation";
+import { ermittleReifegrad, zaehleUnabhaengigeQuellen } from "../src/lib/reifegrad";
 
 function v(p: Partial<VorInhalt> & { titel: string; herausgeber: string }): VorInhalt {
   return {
@@ -35,12 +36,40 @@ describe("Vorklassifikation", () => {
     expect(b[1]?.beziehung).toBe("uebernahme");
   });
 
-  it("wertet eine eigenständige Meldung als unabhängige Bestätigung", () => {
+  it("behauptet keine Unabhängigkeit, nur weil der Herausgeber ein anderer ist", () => {
+    // Umgekehrt zur ersten Fassung, und das ist der Kern: Der Beitrag ist ja
+    // gerade deshalb in dieser Gruppe, weil er dieselbe Sache behandelt. Dass
+    // er sie anders formuliert, belegt keine eigene Recherche. Sonst würden
+    // drei Portale, die dieselbe Herstellermeldung abschreiben, zu "drei
+    // unabhängigen Quellen" und die Aussage stiege auf Stufe 5.
     const b = klassifiziereGruppe([
       v({ titel: "Nach Update KB5062 keine Verbindung mit Intel WLAN", herausgeber: "Forum", veroeffentlichtAm: new Date("2026-07-01") }),
       v({ titel: "Intel WLAN Karten verlieren Verbindung, Nutzer berichten von Ausfällen", herausgeber: "Neowin", veroeffentlichtAm: new Date("2026-07-02") }),
     ]);
-    expect(b[1]?.beziehung).toBe("unabhaengige_bestaetigung");
+    expect(b[1]?.beziehung).toBe("uebernahme");
+    expect(b[1]?.begruendung).toContain("Unabhängigkeit ist noch nicht belegt");
+  });
+
+  it("hält den Reifegrad ohne KI-Analyse bei höchstens Stufe 2", () => {
+    // Die Folge der vorsichtigen Vorgabe, hier ausdrücklich festgehalten:
+    // Drei Herausgeber über dieselbe Sache ergeben eine unabhängige Quelle
+    // (die Primärmeldung), nicht drei.
+    const gruppe = [
+      v({ titel: "Erstmeldung zum Ausfall", herausgeber: "A", veroeffentlichtAm: new Date("2026-07-01") }),
+      v({ titel: "Bericht über denselben Ausfall", herausgeber: "B", veroeffentlichtAm: new Date("2026-07-02") }),
+      v({ titel: "Auch dieses Haus meldet den Ausfall", herausgeber: "C", veroeffentlichtAm: new Date("2026-07-03") }),
+    ];
+    const belege = klassifiziereGruppe(gruppe).map((b) => ({
+      inhaltId: b.inhaltId,
+      herausgeber: gruppe.find((g) => g.inhaltId === b.inhaltId)?.herausgeber ?? "",
+      quellentyp: "fachmedium",
+      beziehung: b.beziehung,
+      klassifikation: b.klassifikation,
+      technischNachvollziehbar: false,
+      erfasstAm: new Date(),
+    }));
+    expect(zaehleUnabhaengigeQuellen(belege)).toBe(1);
+    expect(ermittleReifegrad(belege).stufe).toBe(2);
   });
 
   it("markiert Herstellerquellen als offizielle Bestätigung", () => {

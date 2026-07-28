@@ -109,3 +109,35 @@ export function gemeinsameKennungen(
   const menge = new Set(b);
   return a.filter((k) => menge.has(k));
 }
+
+/**
+ * Sind zwei Beiträge nachweislich verschiedene Sachen?
+ *
+ * Ja, wenn beide eine Kennung tragen und keine davon geteilt ist. Eine
+ * Kennung benennt genau einen Gegenstand; zwei verschiedene Kennungen
+ * benennen zwei verschiedene Gegenstände. Titelähnlichkeit kann daran nichts
+ * ändern - sie misst Wortgebrauch, nicht Sachidentität.
+ *
+ * Beim Messen an den 144 echten Inhalten war das die wirksamste Einzelregel.
+ * Vier von acht Zusammenführungen waren falsch, alle nach demselben Muster:
+ *
+ *   CVE-2026-54120 Microsoft Surface Remote Code Execution Vulnerability
+ *   CVE-2026-56165 Microsoft Account Remote Code Execution Vulnerability
+ *   CVE-2026-50517 Microsoft M365 Copilot Remote Code Execution Vulnerability
+ *
+ * Drei verschiedene Sicherheitslücken, Titelähnlichkeit 0,64 - allein wegen
+ * der Formelwörter "Microsoft ... Remote Code Execution Vulnerability". Weil
+ * MSRC eine Herstellerquelle ist, stand das Ergebnis auf Stufe 6 "offiziell
+ * bestätigt": eine amtlich klingende Aussage über einen Sachverhalt, den es
+ * so nicht gibt.
+ *
+ * Bewusst nur bei beidseitig vorhandenen Kennungen: Trägt einer der beiden
+ * keine, ist nichts bewiesen - dann bleibt es bei der Titelähnlichkeit.
+ */
+export function nachweislichVerschieden(
+  a: readonly string[],
+  b: readonly string[],
+): boolean {
+  if (a.length === 0 || b.length === 0) return false;
+  return gemeinsameKennungen(a, b).length === 0;
+}
