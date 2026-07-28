@@ -9,6 +9,7 @@
 --   0003  Relevanzregeln (Spalten an auftraege und quellen)
 --   0004  oeffentliche_auftraege, api_schluessel_speichern/zustand/entfernen
 --   0005  dashboard_daten mit Belegen, auftrag_uebernehmen, api_schluessel_geheim
+--   0006  Taktung als Bereich; auftrag_uebernehmen nachgezogen
 
 -- Beobachtungsauftrag: themenneutraler Datensatz, KEIN Code.
 CREATE TABLE auftraege (
@@ -19,7 +20,12 @@ CREATE TABLE auftraege (
   fragestellung TEXT NOT NULL,
   suchbegriffe  TEXT[] NOT NULL DEFAULT '{}',
   sprachen      TEXT[] NOT NULL DEFAULT '{de,en}',
-  intervall_minuten INT NOT NULL DEFAULT 360 CHECK (intervall_minuten >= 15),
+  -- Taktung als Bereich (Migration 0006, ADR 0012). Der Takt bewegt sich
+  -- zwischen den Grenzen: Ertrag beschleunigt, Leerlauf bremst.
+  intervall_min_minuten INT NOT NULL DEFAULT 60 CHECK (intervall_min_minuten >= 5),
+  intervall_max_minuten INT NOT NULL DEFAULT 1440 CHECK (intervall_max_minuten <= 43200),
+  aktueller_takt_minuten INT,                 -- NULL = noch nie gelaufen
+  naechster_lauf_am TIMESTAMPTZ,              -- NULL = sofort fällig
   aktiv         BOOLEAN NOT NULL DEFAULT true,
   dashboard_config JSONB NOT NULL DEFAULT '{}'::jsonb, -- deklarative Widget-Konfig (Schema in docs/dashboard-config.schema.json)
   oeffentliche_demo BOOLEAN NOT NULL DEFAULT false, -- ohne Anmeldung lesbar (ADR 0004), nachgetragen in Migration 0002

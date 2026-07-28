@@ -27,7 +27,7 @@ export default async function AuftragBearbeiten({
     .from("auftraege")
     // Eine zusammenhängende Zeichenkette, nicht verkettet: supabase-js leitet
     // den Rückgabetyp aus diesem Literal ab.
-    .select("id,name,zielbeschreibung,fragestellung,suchbegriffe,pflichtbegriffe,ausschlussbegriffe,mindest_treffer,intervall_minuten,aktiv,oeffentliche_demo")
+    .select("id,name,zielbeschreibung,fragestellung,suchbegriffe,pflichtbegriffe,ausschlussbegriffe,mindest_treffer,intervall_min_minuten,intervall_max_minuten,aktueller_takt_minuten,naechster_lauf_am,aktiv,oeffentliche_demo")
     .eq("id", auftragId)
     .maybeSingle();
 

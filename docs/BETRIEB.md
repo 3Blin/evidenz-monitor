@@ -40,8 +40,46 @@ Im Terminalfenster `Strg + C`.
 Ein Sammellauf: `npm run sammeln`
 Auswertung (Gruppierung, Bewertung): `npm run auswerten`
 
-Im Dauerbetrieb übernimmt das ein Zeitplan (z. B. ein Vercel-Cron-Auftrag)
-im Abstand, der im Auftrag hinterlegt ist.
+`npm run sammeln` ruft nur die Aufträge ab, die gerade **fällig** sind. Mit
+`npm run sammeln -- --alle` werden alle abgerufen, unabhängig von ihrer
+Taktung — gedacht für den ersten Lauf und die Fehlersuche.
+
+### Im Dauerbetrieb: der Zeitplan
+
+Der Workflow `.github/workflows/takt.yml` ruft alle 15 Minuten an und führt
+`sammeln` und `auswerten` aus. Er klopft nur; abgerufen wird, was fällig ist.
+Ist nichts fällig, endet der Lauf nach Sekunden mit `Kein Auftrag faellig`.
+
+**Einmalig einzurichten:** In GitHub unter *Settings → Secrets and variables →
+Actions → New repository secret* ein Geheimnis namens `DATABASE_URL` anlegen.
+Den Wert findest du bei Supabase unter *Project Settings → Database →
+Connection string*, Variante **Session pooler**; das Platzhalter-Passwort darin
+durch dein Datenbankkennwort ersetzen.
+
+Ohne dieses Geheimnis läuft der Workflow durch, meldet eine Warnung und
+überspringt die beiden Schritte. Er schlägt bewusst nicht fehl: Ein dauerhaft
+rotes Projekt, dessen Rotfärbung nur "noch nicht eingerichtet" bedeutet,
+gewöhnt einem das Hinsehen ab.
+
+Von Hand auslösen geht unter *Actions → Takt → Run workflow*; dort lässt sich
+auch ankreuzen, dass alle Aufträge abgerufen werden sollen.
+
+### Wie oft wird abgerufen?
+
+Das stellst du je Auftrag unter *Verwalten → Auftrag* ein, und zwar als
+Bereich statt als festen Wert:
+
+- **Mindestens alle … Minuten** — der schnellste Takt. Nicht unter 5 Minuten.
+- **Höchstens alle … Minuten** — der langsamste Takt bei anhaltendem Leerlauf.
+
+Dazwischen stellt sich der Takt selbst ein: Bringt ein Abruf neue Beiträge,
+halbiert sich der Abstand; bringt er nichts, verdoppelt er sich. Ein neuer
+Auftrag beginnt an der Untergrenze. Der derzeitige Takt und der nächste Abruf
+stehen unter den beiden Feldern.
+
+Beispiel: Untergrenze 30 Minuten, Obergrenze 8 Stunden. Passiert nichts, geht
+der Takt in vier Leerläufen auf 8 Stunden hoch; kommt wieder Bewegung ins
+Thema, ist er nach vier Abrufen zurück bei 30 Minuten.
 
 Ob eine Quelle als Feed oder als Webseite gelesen wird, entscheidet ihre
 Adresse: Endet sie auf `.rss`, `.xml`, `.atom` oder enthält sie `/feed`,

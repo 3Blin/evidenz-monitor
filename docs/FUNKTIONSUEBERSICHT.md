@@ -212,3 +212,16 @@ die Leiter bei Stufe 2, sofern keine offizielle Primärquelle beteiligt ist.
 gebaut und getestet, wird aber von keinem Auswertungslauf aufgerufen. Was zum
 Anschließen fehlt, steht in ADR 0011.
 **Baustein:** Vorklassifikation · **Tests:** vorklassifikation.test.ts
+
+## Von selbst abrufen, im passenden Takt
+**Macht:** Ein Zeitplan ruft alle 15 Minuten an; abgerufen wird nur, was fällig
+ist. Wie oft ein Auftrag fällig wird, entscheidet sein eigener Takt — und der
+ist kein fester Wert, sondern bewegt sich zwischen einer Unter- und einer
+Obergrenze, die du einstellst. Bringt ein Abruf neue Beiträge, halbiert sich
+der Abstand; bringt er nichts, verdoppelt er sich.
+**Existiert, damit:** ein schnelllebiges Thema von selbst mehr Aufmerksamkeit
+bekommt als ein ruhiges, ohne dass du nachstellen musst. Und damit überhaupt
+etwas läuft: Vorher passierte ohne Handaufruf gar nichts, und das Feld für den
+Abstand war zwar einstellbar, wurde aber von keinem Lauf gelesen.
+**Baustein:** Taktung · **Tests:** taktung.test.ts (21),
+taktung-datenbank.test.ts (7)

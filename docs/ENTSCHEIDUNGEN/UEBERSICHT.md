@@ -57,3 +57,11 @@
   verbinden. Und: Unabhängigkeit zweier Herausgeber wird nicht mehr
   unterstellt, sondern bleibt der KI-Analyse vorbehalten — ohne sie endet die
   Leiter bei Stufe 2 statt eine Bestätigung zu behaupten, die nie geprüft wurde.
+- **0012 Der Abrufabstand ist ein Bereich:** Statt eines festen Werts stellt
+  die Nutzerin eine Unter- und eine Obergrenze ein; bringt ein Abruf neue
+  Beiträge, rückt der Takt zur Untergrenze, bleibt er leer, zur Obergrenze —
+  weil niemand vorab weiß, wie schnell ein Thema läuft, und weil sich das
+  ändert. Der Zeitplan läuft als GitHub-Workflow und nicht bei Vercel, damit
+  die Weboberfläche weiterhin ohne Datenbankzugang auskommt. Nebenbei behoben:
+  Das bisherige Feld `intervall_minuten` war einstellbar, wurde aber von keinem
+  Lauf gelesen.
