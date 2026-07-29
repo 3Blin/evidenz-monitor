@@ -48,3 +48,28 @@
   gemeinsame Kennungen wie eine KB- oder CVE-Nummer). Freigegebene Aufträge
   lassen sich ins eigene Konto übernehmen, und die Relevanzregeln kann die KI
   auf Wunsch mit Begründung vorschlagen — entschieden wird weiterhin von Hand.
+- **0011 Zusammenführung präzisieren:** Die Messung an den echten Daten zeigte,
+  dass vier von acht Zusammenführungen falsch waren — drei verschiedene
+  Sicherheitslücken galten wegen gleicher Formelwörter als eine Meldung, auf
+  Stufe „offiziell bestätigt". Kennungen trennen jetzt auch, nicht nur
+  verbinden; verglichen wird gegen alle Gruppenmitglieder statt nur gegen das
+  erste; Titelähnlichkeit gilt nur innerhalb von 45 Tagen; gemeinsame Verweise
+  verbinden. Und: Unabhängigkeit zweier Herausgeber wird nicht mehr
+  unterstellt, sondern bleibt der KI-Analyse vorbehalten — ohne sie endet die
+  Leiter bei Stufe 2 statt eine Bestätigung zu behaupten, die nie geprüft wurde.
+- **0012 Der Abrufabstand ist ein Bereich:** Statt eines festen Werts stellt
+  die Nutzerin eine Unter- und eine Obergrenze ein; bringt ein Abruf neue
+  Beiträge, rückt der Takt zur Untergrenze, bleibt er leer, zur Obergrenze —
+  weil niemand vorab weiß, wie schnell ein Thema läuft, und weil sich das
+  ändert. Der Zeitplan läuft als GitHub-Workflow und nicht bei Vercel, damit
+  die Weboberfläche weiterhin ohne Datenbankzugang auskommt. Nebenbei behoben:
+  Das bisherige Feld `intervall_minuten` war einstellbar, wurde aber von keinem
+  Lauf gelesen.
+- **0013 Quellensuche außerhalb des Kerns:** Ein neuer Auftrag beginnt ohne
+  Quellen und sammelt deshalb nichts. NotebookLMs Web-Recherche findet welche —
+  aber sie meldet sich mit dem ganzen Google-Konto an, nicht mit einem eng
+  begrenzten Schlüssel. Deshalb läuft die Suche als externer Sammler auf dem
+  eigenen Rechner und gibt eine Datei aus; in der Verwaltung wird eingefügt und
+  je Eintrag ausgewählt. Der Umweg über die Datei ist die Trennfuge, an der die
+  Zugangsdaten hängen bleiben. NotebookLM ersetzt keine Feeds: Es hilft, sie zu
+  finden.

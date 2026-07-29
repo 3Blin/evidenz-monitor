@@ -48,7 +48,7 @@ async function werteAus(db: pg.Pool, auftrag: AuftragZeile): Promise<void> {
     // das geprüfte Regelwerk in src/lib/relevanz.ts, nicht ein ILIKE in der
     // Abfrage. Nur so ist sie testbar und begründet nachvollziehbar.
     const { rows: alleInhalte } = await db.query<InhaltZeile>(
-      `SELECT i.id AS "inhaltId", i.titel, i.auszug, i.veroeffentlicht_am AS "veroeffentlichtAm",
+      `SELECT i.id AS "inhaltId", i.titel, i.auszug, i.url, i.veroeffentlicht_am AS "veroeffentlichtAm",
               q.typ AS "quellentyp", q.herausgeber, q.themenspezifisch
        FROM inhalte i JOIN quellen q ON q.id=i.quelle_id
        WHERE q.auftrag_id=$1 AND q.aktiv=true`,

@@ -20,6 +20,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseImBrowser } from "@/lib/supabase-browser";
 import { begriffslisteAusEingabe } from "@/lib/relevanz";
+import {
+  GROESSTER_TAKT_MINUTEN, KLEINSTER_TAKT_MINUTEN, pruefeBereich, taktInWorten,
+} from "@/lib/taktung";
 
 export interface AuftragVollstaendig {
   readonly id: string;
@@ -30,7 +33,10 @@ export interface AuftragVollstaendig {
   readonly pflichtbegriffe: string[];
   readonly ausschlussbegriffe: string[];
   readonly mindest_treffer: number;
-  readonly intervall_minuten: number;
+  readonly intervall_min_minuten: number;
+  readonly intervall_max_minuten: number;
+  readonly aktueller_takt_minuten: number | null;
+  readonly naechster_lauf_am: string | null;
   readonly aktiv: boolean;
   readonly oeffentliche_demo: boolean;
 }
@@ -52,7 +58,8 @@ export function AuftragsFormular({ auftrag }: { auftrag: AuftragVollstaendig }) 
   const [pflicht, setPflicht] = useState(auftrag.pflichtbegriffe.join(", "));
   const [ausschluss, setAusschluss] = useState(auftrag.ausschlussbegriffe.join(", "));
   const [mindest, setMindest] = useState(String(auftrag.mindest_treffer));
-  const [takt, setTakt] = useState(String(auftrag.intervall_minuten));
+  const [taktMin, setTaktMin] = useState(String(auftrag.intervall_min_minuten));
+  const [taktMax, setTaktMax] = useState(String(auftrag.intervall_max_minuten));
   const [aktiv, setAktiv] = useState(auftrag.aktiv);
   const [demo, setDemo] = useState(auftrag.oeffentliche_demo);
   const [laeuft, setLaeuft] = useState(false);
@@ -123,6 +130,12 @@ export function AuftragsFormular({ auftrag }: { auftrag: AuftragVollstaendig }) 
     ereignis.preventDefault();
     setLaeuft(true);
     setMeldung(null);
+    // Vertauschte oder unsinnige Grenzen werden zurechtgerückt, nicht
+    // abgewiesen - was gemeint war, ist offensichtlich.
+    const bereich = pruefeBereich(
+      Number.parseInt(taktMin, 10),
+      Number.parseInt(taktMax, 10),
+    );
     try {
       const supabase = supabaseImBrowser();
       const { error } = await supabase
@@ -135,15 +148,20 @@ export function AuftragsFormular({ auftrag }: { auftrag: AuftragVollstaendig }) 
           pflichtbegriffe: begriffslisteAusEingabe(pflicht),
           ausschlussbegriffe: begriffslisteAusEingabe(ausschluss),
           mindest_treffer: Math.max(1, Number.parseInt(mindest, 10) || 1),
-          intervall_minuten: Math.max(15, Number.parseInt(takt, 10) || 360),
+          intervall_min_minuten: bereich.minMinuten,
+          intervall_max_minuten: bereich.maxMinuten,
           aktiv,
           oeffentliche_demo: demo,
         })
         .eq("id", auftrag.id);
       if (error) throw new Error(error.message);
+      setTaktMin(String(bereich.minMinuten));
+      setTaktMax(String(bereich.maxMinuten));
       setMeldung({
         gut: true,
-        text: "Gespeichert. Wirksam wird es beim nächsten Auswertungslauf.",
+        text:
+          `Gespeichert. Abruf künftig zwischen alle ${taktInWorten(bereich.minMinuten)}` +
+          ` und alle ${taktInWorten(bereich.maxMinuten)}.`,
       });
       router.refresh();
     } catch (f) {
@@ -286,11 +304,36 @@ export function AuftragsFormular({ auftrag }: { auftrag: AuftragVollstaendig }) 
           )}
         </div>
 
-        <label className="feld">
-          <span>Abstand zwischen Abrufen (Minuten)</span>
-          <input type="number" min={15} max={10080} value={takt}
-            onChange={(e) => setTakt(e.target.value)} style={{ maxWidth: 120 }} />
-        </label>
+        <fieldset className="feld-gruppe">
+          <legend>Wie oft abrufen?</legend>
+          <p className="feld-hinweis">
+            Kein fester Wert, sondern ein Bereich: Bringt ein Abruf neue
+            Beiträge, rückt der Takt zur Untergrenze; bleibt er leer, zur
+            Obergrenze. So bekommt ein schnelllebiges Thema von selbst mehr
+            Aufmerksamkeit als ein ruhiges — ohne dass du nachstellen musst.
+          </p>
+          <div className="feld-paar">
+            <label className="feld">
+              <span>Mindestens alle … Minuten</span>
+              <input type="number" min={KLEINSTER_TAKT_MINUTEN} max={GROESSTER_TAKT_MINUTEN}
+                value={taktMin} onChange={(e) => setTaktMin(e.target.value)} />
+              <small>Schnellster Takt. Unter {KLEINSTER_TAKT_MINUTEN} Minuten nicht möglich.</small>
+            </label>
+            <label className="feld">
+              <span>Höchstens alle … Minuten</span>
+              <input type="number" min={KLEINSTER_TAKT_MINUTEN} max={GROESSTER_TAKT_MINUTEN}
+                value={taktMax} onChange={(e) => setTaktMax(e.target.value)} />
+              <small>Langsamster Takt bei anhaltendem Leerlauf.</small>
+            </label>
+          </div>
+          <p className="feld-hinweis">
+            {auftrag.aktueller_takt_minuten
+              ? `Derzeit: alle ${taktInWorten(auftrag.aktueller_takt_minuten)}.`
+              : "Noch nie abgerufen — der erste Lauf erfolgt an der Untergrenze."}
+            {auftrag.naechster_lauf_am &&
+              ` Nächster Abruf frühestens ${new Date(auftrag.naechster_lauf_am).toLocaleString("de-DE")}.`}
+          </p>
+        </fieldset>
 
         <label className="feld feld-schalter">
           <input type="checkbox" checked={aktiv} onChange={(e) => setAktiv(e.target.checked)} />

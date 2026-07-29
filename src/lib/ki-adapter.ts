@@ -7,6 +7,25 @@
  * als Daten übergeben, Anweisungen darin werden nie befolgt, und die Antwort
  * wird gegen ein festes Schema geprüft (Schutz vor Prompt-Injection und
  * Halluzination). Die KI vergibt keine Reifegrad-Stufen.
+ *
+ * ---------------------------------------------------------------------------
+ * STAND: GEBAUT, ABER NICHT IM BETRIEB (ADR 0011)
+ *
+ * Dieser Baustein wird von keinem Auswertungslauf aufgerufen. Der Auswertungs-
+ * lauf schreibt an jede Aussage "KI-Analyse noch nicht ausgeführt", und das
+ * stimmt: Die Einordnung beruht ausschließlich auf den deterministischen
+ * Regeln in vorklassifikation.ts.
+ *
+ * Der Vermerk steht hier, weil ein Baustein, der aussieht wie eine Funktion,
+ * aber keine ist, die schlimmste Sorte Dokumentationsfehler wäre - man verließe
+ * sich auf etwas, das nie läuft. Was fehlt, um ihn anzuschließen, und was das
+ * kostet, steht in docs/ENTSCHEIDUNGEN/0011-gruppierung-praezisieren.md.
+ *
+ * Praktische Folge des Fehlens: Die Frage "berichten zwei Herausgeber
+ * unabhängig voneinander über dieselbe Sache?" ist ohne Sprachverständnis
+ * nicht zu beantworten. Deshalb bleibt der Reifegrad ohne diesen Baustein bei
+ * höchstens Stufe 2, sofern keine offizielle Primärquelle beteiligt ist.
+ * ---------------------------------------------------------------------------
  */
 import { z } from "zod";
 

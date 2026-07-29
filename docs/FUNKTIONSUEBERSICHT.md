@@ -61,11 +61,16 @@ Meldungen über Titelähnlichkeit und — seit ADR 0010 — Beiträge über dies
 Sache an einer **gemeinsamen Kennung**: einer KB-Nummer, einer CVE-Nummer, einer
 Buildnummer. Zwei Forenbeiträge zu „KB5094126" gehören zusammen, auch wenn ihre
 Titel nur elf Prozent Übereinstimmung haben.
+Umgekehrt trennen Kennungen auch: Tragen zwei Beiträge verschiedene Kennungen,
+sind es verschiedene Sachen — dann hilft auch ein ähnlich klingender Titel
+nicht. Zusätzlich verbindet ein gemeinsamer Verweis auf dieselbe fremde Seite,
+und ähnliche Titel gelten nur innerhalb von 45 Tagen als dieselbe Meldung.
 **Existiert, damit:** dieselbe Nachricht in zehn Portalen nicht als zehn
 unabhängige Bestätigungen zählt — und umgekehrt zwei Berichte über denselben
 Vorgang nicht als zwei unverbundene Einzelhinweise stehen bleiben.
 **Baustein:** Dublettenerkennung · **Tests:** dedup.test.ts (11),
-kennungen.test.ts (16), gruppierung.test.ts (10)
+kennungen.test.ts (19), gruppierung.test.ts (21), verweise.test.ts (11),
+gruppierung-echtdaten.test.ts (5, gegen die 144 echten Inhalte)
 
 ## Unpassende Meldungen aussortieren
 **Macht:** Prüft für jeden Beitrag, ob er zum Auftrag gehört. Dafür gelten drei
@@ -195,3 +200,42 @@ und ohne selbst wieder öffentlich zu sein.
 **Existiert, damit:** ein Beispiel nicht nur anzusehen, sondern zu benutzen ist.
 Vorher verwies die Verwaltung auf einen Fall, den man nicht bearbeiten konnte.
 **Baustein:** Verwaltung · **Tests:** belege-und-uebernahme.test.ts
+
+## Einordnen ohne Sprachverständnis (Grenze)
+**Macht:** Ohne KI-Analyse gilt jeder Beitrag außer der Erstmeldung als
+Übernahme. Unabhängigkeit wird nicht unterstellt.
+**Existiert, damit:** keine Stufe behauptet wird, die nie geprüft wurde. Drei
+Portale, die dieselbe Herstellermeldung abschreiben, sind keine drei
+unabhängigen Quellen. Die Folge ist ausdrücklich gewollt: Ohne KI-Analyse endet
+die Leiter bei Stufe 2, sofern keine offizielle Primärquelle beteiligt ist.
+**Nicht im Betrieb:** Der KI-Analyse-Baustein (`src/lib/ki-adapter.ts`) ist
+gebaut und getestet, wird aber von keinem Auswertungslauf aufgerufen. Was zum
+Anschließen fehlt, steht in ADR 0011.
+**Baustein:** Vorklassifikation · **Tests:** vorklassifikation.test.ts
+
+## Von selbst abrufen, im passenden Takt
+**Macht:** Ein Zeitplan ruft alle 15 Minuten an; abgerufen wird nur, was fällig
+ist. Wie oft ein Auftrag fällig wird, entscheidet sein eigener Takt — und der
+ist kein fester Wert, sondern bewegt sich zwischen einer Unter- und einer
+Obergrenze, die du einstellst. Bringt ein Abruf neue Beiträge, halbiert sich
+der Abstand; bringt er nichts, verdoppelt er sich.
+**Existiert, damit:** ein schnelllebiges Thema von selbst mehr Aufmerksamkeit
+bekommt als ein ruhiges, ohne dass du nachstellen musst. Und damit überhaupt
+etwas läuft: Vorher passierte ohne Handaufruf gar nichts, und das Feld für den
+Abstand war zwar einstellbar, wurde aber von keinem Lauf gelesen.
+**Baustein:** Taktung · **Tests:** taktung.test.ts (21),
+taktung-datenbank.test.ts (7)
+
+## Quellen zu einer Fragestellung finden
+**Macht:** Ein Skript auf deinem Rechner (`sammler/notebooklm/`) lässt
+NotebookLM das Netz nach passenden Quellen durchsuchen und schreibt die
+Fundstellen in eine Datei. Deren Inhalt fügst du in der Verwaltung ein und
+wählst je Eintrag aus, was angelegt wird.
+**Existiert, damit:** ein neuer Auftrag nicht mit null Quellen dasteht. Anders
+als der KI-Vorschlag, der sich an Adressen *erinnert*, wird hier tatsächlich
+*gesucht* — die Adressen existieren.
+**Warum außerhalb der Plattform:** Das Werkzeug meldet sich mit dem ganzen
+Google-Konto an, nicht mit einem eng begrenzten Schlüssel. Ein solches
+Geheimnis gehört nicht auf einen Server. Der Umweg über die Datei ist die
+Trennfuge (ADR 0013).
+**Baustein:** Externer Sammler · **Tests:** vorschlagsdatei.test.ts (12)

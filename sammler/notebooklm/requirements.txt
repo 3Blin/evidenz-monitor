@@ -1,0 +1,5 @@
+# Gegen diese Fassung ist quellen_finden.py geprüft. Bewusst festgenagelt:
+# Die Bibliothek spricht eine undokumentierte Schnittstelle von Google, und
+# ihre eigene Oberfläche hat sich schon geändert - die README nennt ein
+# client.sources.add_research(), das es in 0.7.3 nicht gibt.
+notebooklm-py==0.7.3

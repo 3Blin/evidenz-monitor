@@ -9,7 +9,22 @@
  */
 import type { Beziehung, Klassifikation } from "./reifegrad";
 import { titelAehnlichkeit, AEHNLICHKEITS_SCHWELLE } from "./dedup";
-import { gemeinsameKennungen, kennungen } from "./kennungen";
+import { gemeinsameKennungen, kennungen, nachweislichVerschieden } from "./kennungen";
+import { gemeinsameVerweise, verweise } from "./verweise";
+
+/**
+ * Wie weit zwei Beiträge zeitlich auseinanderliegen dürfen, um allein wegen
+ * ähnlicher Titel als dieselbe Meldung zu gelten.
+ *
+ * Grund: Wiederkehrende Vorgänge tragen wiederkehrende Titel. Ein monatlicher
+ * Patchtag, ein jährlicher Bericht, eine regelmäßige Preisrunde - ohne
+ * Zeitgrenze verschmelzen Jahrgänge zu einer einzigen, nie endenden Meldung.
+ *
+ * Ausdrücklich NICHT für Zusammenführungen über eine gemeinsame Kennung oder
+ * einen gemeinsamen Verweis: Dieselbe Sicherheitslücke bleibt dieselbe
+ * Sicherheitslücke, auch wenn ein halbes Jahr zwischen den Berichten liegt.
+ */
+export const ZEITFENSTER_TAGE = 45;
 
 export interface VorInhalt {
   readonly inhaltId: string;
@@ -19,6 +34,8 @@ export interface VorInhalt {
   readonly veroeffentlichtAm: Date | null;
   /** Auszug, sofern vorhanden - Kennungen stehen oft erst im Text. */
   readonly auszug?: string;
+  /** Adresse des Beitrags - trennt eigene Wege von Verweisen nach außen. */
+  readonly url?: string;
 }
 
 export interface Vorbefund {
@@ -31,10 +48,29 @@ export interface Vorbefund {
 const OFFIZIELL = new Set(["hersteller_offiziell", "status_seite"]);
 
 /**
- * Ordnet eine Gruppe inhaltsgleicher Beiträge ein.
- * Der früheste Beitrag gilt als Primärmeldung; spätere Beiträge mit hoher
- * Titelähnlichkeit gelten als Übernahme, abweichende als unabhängige
- * Bestätigung.
+ * Ordnet eine Gruppe zusammengehöriger Beiträge ein.
+ *
+ * Der früheste Beitrag gilt als Primärmeldung, alle weiteren als Übernahme.
+ *
+ * Die Vorgabe "Übernahme" ist die entscheidende Festlegung, und sie war in
+ * der ersten Fassung verkehrt herum: Dort galt jeder Beitrag eines anderen
+ * Herausgebers mit abweichendem Titel als *unabhängige Bestätigung*. Das ist
+ * ein Fehlschluss. Der Beitrag ist ja gerade deshalb in dieser Gruppe, weil
+ * er dieselbe Sache behandelt - dass er sie anders formuliert, belegt keine
+ * eigene Recherche. Drei Portale, die dieselbe Herstellermeldung abschreiben,
+ * wären so zu "drei unabhängigen Quellen" und die Aussage auf Stufe 5
+ * geraten: eine Falschaussage nach dem eigenen Maßstab dieses Projekts.
+ *
+ * Unabhängigkeit ist eine inhaltliche Feststellung - hat diese Redaktion
+ * eigene Belege beigebracht oder nur umgeschrieben? Das ist ohne
+ * Sprachverständnis nicht entscheidbar und deshalb der KI-Analyse
+ * vorbehalten, die diese Einordnung überschreiben darf (Vertrag:
+ * ARCHITEKTUR.md). Bis dahin gilt die vorsichtige Annahme.
+ *
+ * Folge: Ohne KI-Analyse erreicht eine Aussage höchstens Stufe 2
+ * ("mehrfach beobachtet") - es sei denn, eine offizielle Primärquelle ist
+ * beteiligt. Das ist gewollt: Lieber eine Stufe zu niedrig als eine
+ * Unabhängigkeit behaupten, die nie geprüft wurde.
  */
 export function klassifiziereGruppe(gruppe: readonly VorInhalt[]): readonly Vorbefund[] {
   if (gruppe.length === 0) return [];
@@ -56,24 +92,15 @@ export function klassifiziereGruppe(gruppe: readonly VorInhalt[]): readonly Vorb
         begruendung: "Früheste Veröffentlichung dieser Meldung",
       };
     }
-    const aehnlich = titelAehnlichkeit(primaer.titel, inhalt.titel);
     const gleicherHerausgeber =
       primaer.herausgeber.toLowerCase() === inhalt.herausgeber.toLowerCase();
-    if (aehnlich >= 0.8 || gleicherHerausgeber) {
-      return {
-        inhaltId: inhalt.inhaltId,
-        beziehung: "uebernahme",
-        klassifikation,
-        begruendung: gleicherHerausgeber
-          ? "Selber Herausgeber wie die Primärmeldung"
-          : `Titel nahezu identisch zur Primärmeldung (Ähnlichkeit ${aehnlich.toFixed(2)})`,
-      };
-    }
     return {
       inhaltId: inhalt.inhaltId,
-      beziehung: "unabhaengige_bestaetigung",
+      beziehung: "uebernahme",
       klassifikation,
-      begruendung: `Eigenständige Meldung eines anderen Herausgebers (Ähnlichkeit ${aehnlich.toFixed(2)})`,
+      begruendung: gleicherHerausgeber
+        ? "Selber Herausgeber wie die Primärmeldung"
+        : "Späterer Beitrag zur selben Meldung; Unabhängigkeit ist noch nicht belegt",
     };
   });
 }
@@ -87,79 +114,146 @@ export interface Gruppenbefund {
 /**
  * Gruppiert Beiträge, die dieselbe Meldung behandeln.
  *
- * Zwei Wege führen in dieselbe Gruppe:
+ * Vier Regeln, in dieser Reihenfolge geprüft:
  *
- * 1. **Gemeinsame Kennung.** KB5094126 in zwei Beiträgen heißt: beide handeln
- *    von diesem Update. Das gilt auch dann, wenn die Titel sonst nichts
- *    gemeinsam haben - und genau das ist der häufige Fall zwischen zwei
- *    Herausgebern.
- * 2. **Ähnlicher Titel.** Der bisherige Weg, unverändert in seiner Schwelle.
+ * 1. **Gemeinsame Kennung** verbindet. KB5094126 in zwei Beiträgen heißt:
+ *    beide handeln von diesem Update - auch wenn die Titel nichts gemeinsam
+ *    haben, und genau das ist der häufige Fall zwischen zwei Herausgebern.
+ * 2. **Verschiedene Kennungen trennen.** Tragen beide eine Kennung und teilen
+ *    keine, sind es verschiedene Gegenstände; die Titelähnlichkeit wird dann
+ *    gar nicht erst befragt. Ohne diese Regel verschmolzen drei verschiedene
+ *    Sicherheitslücken zu einer einzigen Meldung auf Stufe 6, weil ihre Titel
+ *    dieselben Formelwörter tragen.
+ * 3. **Gemeinsamer Verweis** verbindet. Eine Übernahme verlinkt das Original;
+ *    das hängt nicht an der Formulierung.
+ * 4. **Ähnlicher Titel** verbindet, aber nur innerhalb von ZEITFENSTER_TAGE.
+ *    Wiederkehrende Vorgänge tragen wiederkehrende Titel.
  *
- * Geändert gegenüber der ersten Fassung ist außerdem, dass die *beste*
- * passende Gruppe gewählt wird und nicht die erste gefundene. Bei der ersten
- * Fassung entschied die Reihenfolge der Beiträge über das Ergebnis.
+ * Geprüft wird gegen alle Mitglieder einer Gruppe und über alle Gruppen
+ * hinweg die beste Passung - nicht die erste gefundene. Sonst entschiede die
+ * Reihenfolge der Beiträge über das Ergebnis.
  *
  * Bewusst nicht gesenkt wurde die Ähnlichkeitsschwelle. Eine niedrigere
  * Schwelle bringt zwar mehr Verknüpfungen, aber falsche: Aus zwei
- * unabhängigen Meldungen würde eine "unabhängige Bestätigung", und der
- * Reifegrad stiege ohne Grund. Ein zu niedriger Reifegrad ist ein Mangel,
- * ein zu hoher ist eine Falschaussage.
+ * unabhängigen Meldungen würde eine Bestätigung, und der Reifegrad stiege
+ * ohne Grund. Ein zu niedriger Reifegrad ist ein Mangel, ein zu hoher ist
+ * eine Falschaussage.
  */
 export function gruppiereMitBegruendung(
   inhalte: readonly VorInhalt[],
 ): readonly Gruppenbefund[] {
+  interface Mitglied {
+    readonly inhalt: VorInhalt;
+    readonly kennungen: readonly string[];
+    readonly verweise: readonly string[];
+  }
   interface Sammler {
-    readonly inhalte: VorInhalt[];
-    readonly kennungen: Set<string>;
+    readonly mitglieder: Mitglied[];
     begruendung: string;
   }
   const gruppen: Sammler[] = [];
 
   for (const inhalt of inhalte) {
-    const eigene = kennungen(inhalt.titel, inhalt.auszug ?? "");
+    const text = inhalt.auszug ?? "";
+    const neuling: Mitglied = {
+      inhalt,
+      kennungen: kennungen(inhalt.titel, text),
+      verweise: verweise(text, inhalt.url),
+    };
 
     let beste: Sammler | null = null;
     let besterWert = 0;
     let besteBegruendung = "";
 
     for (const gruppe of gruppen) {
-      const erster = gruppe.inhalte[0];
-      if (!erster) continue;
-
-      // Eine gemeinsame Kennung schlägt jede Titelähnlichkeit: Sie benennt
-      // den Gegenstand, während der Titel ihn nur umschreibt.
-      const geteilt = gemeinsameKennungen(eigene, [...gruppe.kennungen]);
-      const ersteGeteilte = geteilt[0];
-      if (ersteGeteilte !== undefined) {
+      const befund = passtZurGruppe(neuling, gruppe.mitglieder);
+      if (!befund) continue;
+      if (befund.wert > besterWert) {
         beste = gruppe;
-        besterWert = Number.POSITIVE_INFINITY;
-        besteBegruendung = `Gemeinsame Kennung ${geteilt.join(", ")}`;
-        break;
-      }
-
-      const wert = titelAehnlichkeit(erster.titel, inhalt.titel);
-      if (wert >= AEHNLICHKEITS_SCHWELLE && wert > besterWert) {
-        beste = gruppe;
-        besterWert = wert;
-        besteBegruendung = `Titelähnlichkeit ${wert.toFixed(2)}`;
+        besterWert = befund.wert;
+        besteBegruendung = befund.begruendung;
       }
     }
 
     if (beste) {
-      beste.inhalte.push(inhalt);
-      for (const k of eigene) beste.kennungen.add(k);
+      beste.mitglieder.push(neuling);
       // Die Begründung der Gruppe nennt den Grund der ersten Zusammenführung.
-      if (beste.inhalte.length === 2) beste.begruendung = besteBegruendung;
+      if (beste.mitglieder.length === 2) beste.begruendung = besteBegruendung;
     } else {
       gruppen.push({
-        inhalte: [inhalt],
-        kennungen: new Set(eigene),
+        mitglieder: [neuling],
         begruendung: "Einzelmeldung ohne Entsprechung",
       });
     }
   }
 
-  return gruppen.map((g) => ({ inhalte: g.inhalte, begruendung: g.begruendung }));
+  return gruppen.map((g) => ({
+    inhalte: g.mitglieder.map((m) => m.inhalt),
+    begruendung: g.begruendung,
+  }));
+}
+
+interface Passung {
+  readonly wert: number;
+  readonly begruendung: string;
+}
+
+/**
+ * Prüft einen Beitrag gegen eine bestehende Gruppe.
+ *
+ * Geprüft wird gegen **alle** Mitglieder, nicht nur gegen das erste. Vorher
+ * entschied allein das zuerst eingetroffene Mitglied: Waren A und B ähnlich
+ * und B und C ähnlich, A und C aber nicht, landete C nicht bei [A, B] - das
+ * Ergebnis hing an der Reihenfolge der Beiträge statt an ihrem Inhalt.
+ */
+function passtZurGruppe(
+  neuling: { readonly inhalt: VorInhalt; readonly kennungen: readonly string[]; readonly verweise: readonly string[] },
+  mitglieder: readonly {
+    readonly inhalt: VorInhalt; readonly kennungen: readonly string[]; readonly verweise: readonly string[];
+  }[],
+): Passung | null {
+  let beste: Passung | null = null;
+
+  for (const mitglied of mitglieder) {
+    // 1. Gemeinsame Kennung - das stärkste Signal, es benennt den Gegenstand.
+    const geteilteKennungen = gemeinsameKennungen(neuling.kennungen, mitglied.kennungen);
+    if (geteilteKennungen.length > 0) {
+      return {
+        wert: Number.POSITIVE_INFINITY,
+        begruendung: `Gemeinsame Kennung ${geteilteKennungen.join(", ")}`,
+      };
+    }
+
+    // 2. Verschiedene Kennungen schließen einander aus. Diese Prüfung steht
+    //    vor der Titelähnlichkeit, weil sie sie aufhebt: Zwei Beiträge über
+    //    nachweislich verschiedene Gegenstände sind nicht dieselbe Meldung,
+    //    egal wie ähnlich ihre Titel klingen.
+    if (nachweislichVerschieden(neuling.kennungen, mitglied.kennungen)) continue;
+
+    // 3. Gemeinsamer Verweis auf dieselbe fremde Seite. Eine Übernahme
+    //    verlinkt das Original; das hängt nicht an der Formulierung.
+    const geteilteVerweise = gemeinsameVerweise(neuling.verweise, mitglied.verweise);
+    const ersterVerweis = geteilteVerweise[0];
+    if (ersterVerweis !== undefined) {
+      return { wert: Number.POSITIVE_INFINITY, begruendung: `Gemeinsamer Verweis ${ersterVerweis}` };
+    }
+
+    // 4. Titelähnlichkeit - nur innerhalb des Zeitfensters.
+    if (!imZeitfenster(neuling.inhalt.veroeffentlichtAm, mitglied.inhalt.veroeffentlichtAm)) continue;
+    const wert = titelAehnlichkeit(mitglied.inhalt.titel, neuling.inhalt.titel);
+    if (wert >= AEHNLICHKEITS_SCHWELLE && wert > (beste?.wert ?? 0)) {
+      beste = { wert, begruendung: `Titelähnlichkeit ${wert.toFixed(2)}` };
+    }
+  }
+
+  return beste;
+}
+
+/** Liegen zwei Zeitpunkte nah genug beieinander? Unbekannt gilt als nah. */
+function imZeitfenster(a: Date | null, b: Date | null): boolean {
+  if (!a || !b) return true;
+  const tage = Math.abs(a.getTime() - b.getTime()) / 86_400_000;
+  return tage <= ZEITFENSTER_TAGE;
 }
 
 /** Gruppiert Beiträge, die dieselbe Meldung behandeln (ohne Begründung). */

@@ -14,13 +14,12 @@
     "seed": "node scripts/seed.mjs",
     "sammeln": "tsx scripts/sammeln.job.ts",
     "auswerten": "tsx scripts/auswerten.job.ts",
-    "audit:deps": "npm audit --audit-level=high"
+    "audit:deps": "npm audit --audit-level=high",
+    "messen": "tsx scripts/gruppierung-messen.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.3",
     "@supabase/supabase-js": "2.110.8",
-    "d3-force": "3.0.0",
-    "d3-selection": "3.0.0",
     "next": "16.2.11",
     "pg": "8.16.0",
     "pino": "9.7.0",
@@ -32,8 +31,6 @@
     "zod": "3.25.67"
   },
   "devDependencies": {
-    "@types/d3-force": "3.0.10",
-    "@types/d3-selection": "3.0.11",
     "@types/node": "22.15.30",
     "@types/pg": "8.15.4",
     "@types/react": "19.1.8",

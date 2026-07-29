@@ -4,7 +4,7 @@
  * UUID-Fehler nicht gefunden.
  */
 import { describe, expect, it } from "vitest";
-import { gemeinsameKennungen, kennungen } from "../src/lib/kennungen";
+import { gemeinsameKennungen, kennungen, nachweislichVerschieden } from "../src/lib/kennungen";
 
 describe("kennungen", () => {
   it("findet eine KB-Nummer im Titel", () => {
@@ -93,5 +93,24 @@ describe("gemeinsameKennungen", () => {
 
   it("liefert eine leere Liste, wenn nichts geteilt wird", () => {
     expect(gemeinsameKennungen(["KB5094126"], ["KB5101594"])).toEqual([]);
+  });
+});
+
+describe("nachweislichVerschieden", () => {
+  it("erkennt zwei verschiedene Sicherheitslücken als verschieden", () => {
+    const a = kennungen("CVE-2026-54120 Microsoft Surface Remote Code Execution Vulnerability");
+    const b = kennungen("CVE-2026-56165 Microsoft Account Remote Code Execution Vulnerability");
+    expect(nachweislichVerschieden(a, b)).toBe(true);
+  });
+
+  it("erkennt dieselbe Kennung nicht als verschieden", () => {
+    expect(nachweislichVerschieden(kennungen("KB5094126 hängt"), kennungen("Schleife bei KB5094126")))
+      .toBe(false);
+  });
+
+  it("beweist nichts, wenn eine Seite keine Kennung trägt", () => {
+    expect(nachweislichVerschieden(kennungen("KB5094126 hängt"), kennungen("Drucker streikt")))
+      .toBe(false);
+    expect(nachweislichVerschieden([], [])).toBe(false);
   });
 });

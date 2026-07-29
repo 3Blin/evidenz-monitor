@@ -1,0 +1,153 @@
+# Echte Inhalte des ersten Beobachtungsauftrags, Stand 24.07.2026.
+# Aufbau je Zeile: Herausgeber | Quellentyp | Datum | Titel
+#
+# Zweck: Änderungen an der Gruppierung werden an echten Daten gemessen, nicht
+# an erfundenen Beispielen. Erfundene Beispiele haben in diesem Projekt schon
+# zweimal einen Fehler durchgelassen, den die echten Daten sofort zeigten.
+#
+# Der Auszug fehlt bewusst - er enthält Nutzertexte. Für die Messung der
+# Gruppierung genügen Titel, Herausgeber und Datum.
+ElevenForum|forum|2026-07-24|hp laptop reset
+Neowin|fachmedium|2026-07-24|Meta AI is about to become a lot more useful with the latest update
+ElevenForum|forum|2026-07-24|Has OneDrive gone insane?!
+BleepingComputer|fachmedium|2026-07-24|OnTrac notifies customers of data breach after network hack
+ElevenForum|forum|2026-07-24|garlin's PowerShell scripts for updating Secure Boot CA 2023
+ElevenForum|forum|2026-07-24|Latest Macrium Reflect X updates
+ElevenForum|forum|2026-07-24|Meta Introducing Facebook Verified
+ElevenForum|forum|2026-07-24|KB5101587 Windows 11 Insider Beta (26H1) build 28020.2539 - July 20
+ElevenForum|forum|2026-07-24|KB5101594 Windows 11 Insider Beta (25H2) build 26220.8925 - July 20
+ElevenForum|forum|2026-07-24|KB5101590 Windows 11 Insider Experimental (26H1) build 28120.2546 - July 21
+ElevenForum|forum|2026-07-24|Windows 11 Insider Experimental (Future Platforms) build 29617.1000 - June 26
+ElevenForum|forum|2026-07-24|KB5101589 Windows 11 Insider Experimental (26H2) build 26300.8935 - July 20
+ElevenForum|forum|2026-07-24|Latest Google Chrome released for Windows
+ElevenForum|forum|2026-07-24|OpenAI says AI models went rogue during testing, triggering unprecedented breach at startup
+BleepingComputer|fachmedium|2026-07-24|Hermes AI agent used to automate attack on Thai Finance Ministry
+ElevenForum|forum|2026-07-24|Windows 11 25H2 - Computers freezing
+Neowin|fachmedium|2026-07-24|Anthropic launches Claude Opus 5 with near-Fable intelligence at half the price
+Neowin|fachmedium|2026-07-24|Facebook Marketplace sellers may finally get the tools they've been waiting for
+ElevenForum|forum|2026-07-24|Now may be a good time to do some drivers cleaning job before preparing for a possible 26H2 release this Fall.
+ElevenForum|forum|2026-07-24|Windows 11: How to change folder icons in the "All apps" list in Start Menu?
+heise online|fachmedium|2026-07-24|Top 8: Das beste ferngesteuerte Boot im Test - mit bis zu 45 km/h ueber den Teich
+Neowin|fachmedium|2026-07-24|Microsoft could finally fix one of Xbox's biggest download speed issues with new feature
+BleepingComputer|fachmedium|2026-07-24|Hackers hijack hotel Wi-Fi DNS to steal Microsoft 365 accounts
+Neowin|fachmedium|2026-07-24|Rufus alternate Ventoy improves upon one of Windows 11's system requirements
+heise online|fachmedium|2026-07-24|Sommerurlaub mit dem E-Auto: Ladenetz waechst schneller als der Bedarf
+Neowin|fachmedium|2026-07-24|Get PDF Expert Premium Plan: Lifetime Subscription for Mac now at 42% off
+Neowin|fachmedium|2026-07-24|PlayStation Network has been down for hours, affecting all online services
+Neowin|fachmedium|2026-07-24|Meta has brought a new fix for Facebook's AI bot problem
+heise online|fachmedium|2026-07-24|EU-Sanktionen gegen Russland: Erstmals trifft es den Kryptosektor direkt
+BleepingComputer|fachmedium|2026-07-24|Microsoft blames massive Microsoft 365 outage on maintenance bug
+heise online|fachmedium|2026-07-24|Klimageraeterechner: Kuehlbedarf, Kosten und passende Geraete einschaetzen
+heise online|fachmedium|2026-07-24|Absturz einer Ikone: Varta beantragt Insolvenzverfahren
+Hacker News|community|2026-07-24|Microsoft responds to LG monitors installing McAfee ads on Windows
+BleepingComputer|fachmedium|2026-07-24|Chick-fil-A data breach affects more than 13,000 customers
+heise online|fachmedium|2026-07-24|Hauseigene IT-Dienstleister bleiben auf Wachstumskurs
+BleepingComputer|fachmedium|2026-07-24|Slopsquatting, Phantom Domains, and HalluSquatting Are the Same AI Attack
+Microsoft MSRC|hersteller_offiziell|2026-07-24|CVE-2026-62835 Azure Portal Information Disclosure Vulnerability
+heise online|fachmedium|2026-07-24|Urtopia Carbon Fold 2 im Test: Richtig gutes Klapprad-E-Bike wiegt nur 16 kg
+heise online|fachmedium|2026-07-24|IT-Messe: Gitex Europe in Berlin ist schon wieder Geschichte
+Neowin|fachmedium|2026-07-24|This AOC ACW3222 could fit your home office setup and its discounted 57% right now
+heise online|fachmedium|2026-07-24|Chip-Lithografie: Zeiss baut deutsche Herstellung um ueber 25.000 m2 aus
+heise online|fachmedium|2026-07-24|WhatsApp: iPad-Einrichtung verfuegbar, ausserdem neues CarPlay und PDFs
+BleepingComputer|fachmedium|2026-07-24|Europol flags 4,340 URLs for removal in 'The Com' crackdown
+heise online|fachmedium|2026-07-24|Drei Fragen und Antworten: Wie KI wirklich bei der Schwachstellensuche hilft
+heise online|fachmedium|2026-07-24|Halo Campaign Evolved im Test: Frueher war alles besser
+Neowin|fachmedium|2026-07-24|Age of Empires III returns to life as studio uncancels major expansion
+heise online|fachmedium|2026-07-24|TGIQF: Das Quiz rund um Amiga-Spiele
+heise online|fachmedium|2026-07-24|Hardware-Geruechte: 7-Zoll-Display fuers Jubilaeums-iPhone, Doppelakku fuers Ultra
+heise online|fachmedium|2026-07-24|iX-Workshop: Lokales Active Directory gegen Angriffe absichern
+heise online|fachmedium|2026-07-24|Web.de und GMX ruesten Passkeys nach
+BleepingComputer|fachmedium|2026-07-24|Man gets six years for hacking 750 women's Snapchat accounts
+heise online|fachmedium|2026-07-24|EU-Kommission: TikTok soll Minderjaehrige besser schuetzen
+heise online|fachmedium|2026-07-24|Microsoft setzt auf eigene KI-Modelle: MAI statt OpenAI
+heise online|fachmedium|2026-07-24|Alles neu in Desinfect 2026: PC-Schaedlinge komfortabel aufspueren und beseitigen
+MS Tech Community|forum|2026-07-24|I just updated to the Insider Program, and the memory graph is blank.
+MS Tech Community|forum|2026-07-24|Is there a way to replace all system icons at once in the Insider program?
+heise online|fachmedium|2026-07-24|Kimi K3: Chinesische KI findet mehrere Zero-Day-Luecken in redis-Datenbank
+heise online|fachmedium|2026-07-24|CO2-Bilanz der Autoindustrie im ersten Halbjahr 2026
+heise online|fachmedium|2026-07-24|Apple korrigiert Anleitung zum Umgang mit verschluesseltem HFS+
+Neowin|fachmedium|2026-07-24|ASUS unveils several new AMD EPYC 9006-based servers
+heise online|fachmedium|2026-07-24|WhatsApp-Chats mit anderen Messengern: Threema listet Gruende fuer Ablehnung auf
+heise online|fachmedium|2026-07-24|Post zum Freitag: Steigende Spritpreise, sinkende Reichweitenangst
+heise online|fachmedium|2026-07-24|Heimlich mit Smart Glasses gefilmt: Instagram geht gegen Taeter vor
+Microsoft MSRC|hersteller_offiziell|2026-07-24|CVE-2026-64600 xfs: resample the data fork mapping after cycling ILOCK
+Microsoft MSRC|hersteller_offiziell|2026-07-24|CVE-2026-59677 Process Kill Attack Vector in killall() in seunshare
+Microsoft MSRC|hersteller_offiziell|2026-07-24|CVE-2026-59676 Local File Deletion Attack Vector in rm_rf() in seunshare
+Neowin|fachmedium|2026-07-24|Microsoft will soon let users disable Copilot key in Windows 11
+BleepingComputer|fachmedium|2026-07-24|Clop ransomware targets Windchill, FlexPLM in data theft attacks
+Neowin|fachmedium|2026-07-24|Microsoft shares some details on Azure outage that blocked Windows 11 update downloads
+MS Tech Community|forum|2026-07-24|A USB speaker in preview mode is suddenly recognized as a Steam Streaming device
+MS Tech Community|forum|2026-07-24|How do I get the preview version to display the new silver Windows logo?
+MS Tech Community|forum|2026-07-24|The list of temporary files in the Insider system storage settings cannot be loaded
+Neowin|fachmedium|2026-07-24|GitHub adjusts bounty program, adds VIP program to filter AI submissions
+Neowin|fachmedium|2026-07-24|ChatGPT Voice experience gets a massive upgrade on desktop
+Hacker News|community|2026-07-24|Midscroll - Windows mm autoscroll for Linux, works on Wayland and X11
+Neowin|fachmedium|2026-07-23|This CORSAIR PC case has a wood front panel and is now on sale
+BleepingComputer|fachmedium|2026-07-23|New Dolphin X malware uses AI to rank high-value targets
+Hacker News|community|2026-07-23|Show HN: Skim - a minimalist open-source email client for Windows (MIT)
+Hacker News|community|2026-07-23|Microsoft responds to LG monitors installing McAfee ads on Windows
+Neowin|fachmedium|2026-07-23|Xbox Free Play Days is offering MGS Master Collection, For Honor, and more to try
+BleepingComputer|fachmedium|2026-07-23|Australian energy provider Origin says data breach exposes client data
+Neowin|fachmedium|2026-07-23|Microsoft tracks every Windows PC through a secret key, here's everything you need to know
+BleepingComputer|fachmedium|2026-07-23|Fake Claude app promoted by Bing ads pushes SectopRAT malware
+Hacker News|community|2026-07-23|Show HN: Fovea - Record beautiful product demos on Windows (free, open source)
+Neowin|fachmedium|2026-07-23|OpenAI launches Health in ChatGPT with Apple Health integration to everyone in the US
+Hacker News|community|2026-07-23|Microsoft Store Shows Years of App History After a Clean Windows 10 Install
+Neowin|fachmedium|2026-07-23|US lawmakers propose 'AI kill switch' to kill rogue AI before it kills us
+Neowin|fachmedium|2026-07-23|This LG UltraGear 45-inch 5K2K curved OLED monitor hits lowest ever price
+Neowin|fachmedium|2026-07-23|Microsoft expands its in-house AI push with new image and voice models
+Neowin|fachmedium|2026-07-23|Opera One finally adds vertical tabs and better Google Lens integration
+Neowin|fachmedium|2026-07-23|Story-driven card game Foretales is free to claim on the Epic Games Store
+Neowin|fachmedium|2026-07-23|Xbox is trialing ad-supported streaming for owned games, but there are big limits
+BleepingComputer|fachmedium|2026-07-23|Russian hackers exploit Zimbra zero-click flaw for email theft
+BleepingComputer|fachmedium|2026-07-23|Hackers abuse Notepad++ plugins to stealthily install malware
+BleepingComputer|fachmedium|2026-07-23|Microsoft 365 outage affects Teams, SharePoint and other services
+Hacker News|community|2026-07-23|Windows: Global Device ID leads to legally relevant identification
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-54120 Microsoft Surface Remote Code Execution Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-58630 Azure App Service on Azure Stack Hub Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-56167 Azure AI Search Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-56163 Microsoft Azure Kubernetes Service Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-56165 Microsoft Account Remote Code Execution Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-57106 Data Quality Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-62825 Azure Key Vault Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-58275 Azure DNS Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-62835 Online Services Information Disclosure Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-56160 Azure Red Hat OpenShift (ARO) Elevation of Privilege Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-35425 Azure API Management (APIM) Remote Code Execution Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-49159 Microsoft Graph Information Disclosure Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-50517 Microsoft M365 Copilot Remote Code Execution Vulnerability
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-56191 Microsoft Exchange Online Tampering Vulnerability
+Hacker News|community|2026-07-23|Show HN: ShotsGlow - Windows screenshot editor with on-device background removal
+Hacker News|community|2026-07-23|Show HN: NvChat - A single-exe Windows client for Nvidia's free LLM API
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-44687 Off-by-one error in 'harden-below-nxdomain' logic can shadow a stub/forward zone by a legitimate parent's NXDOMAIN
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-55973 'dns-error-reporting: yes' leads to stack buffer overflow
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-53910 Heap-based Buffer Overflow in GNU diffutils
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-63136 Uncontrolled Resource Consumption in Elasticsearch Leading to Denial of Service
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-63140 Reachable Assertion in Elasticsearch Leading to Denial of Service
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-56145 Uncontrolled Resource Consumption in Elasticsearch Leading to Denial of Service
+Microsoft MSRC|hersteller_offiziell|2026-07-23|CVE-2026-47729 Squid: Memory disclosure in FTP gateway
+Hacker News|community|2026-07-22|Nvidia released its first official GeForce driver for Windows on Arm
+Hacker News|community|2026-07-22|Debugging why a PlayStation headset dongle freezes all Windows audio
+Hacker News|community|2026-07-22|Pinball on 64-Bit Alpha AXP Windows NT
+Hacker News|community|2026-07-22|Show HN: Interact with inactive macOS windows without selecting the window first
+Hacker News|community|2026-07-22|Sneaky Windows stealer targets 300 apps, gives crims AI profiler to max profits
+Hacker News|community|2026-07-22|Show HN: LapDeck - Turn your phone into a remote deck for your Windows laptop
+Hacker News|community|2026-07-21|Show HN: Keyvok - An offline Windows password manager using DPAPI
+Hacker News|community|2026-07-21|Show HN: Apotrope - Offline Windows security auditor (like Lynis, for Windows)
+Hacker News|community|2026-07-21|Windows LegacyHive zero-day flaw gets free, unofficial patches
+Hacker News|community|2026-07-21|GDID Windows - Cut the tracker that follows you even under VPN
+Hacker News|community|2026-07-21|Show HN: CLI tool that packages data-heavy projects into LLM context windows
+MS Tech Community|forum|2026-07-21|Bitte Geraete-UUID aus dem Windows Insider Program entfernen
+MS Tech Community|forum|2026-07-21|Insider Update Settings page shows that your organization has disabled certain updates
+MS Tech Community|forum|2026-07-21|CrossDeviceResume has reappeared after the Insider Preview update KB5089573
+MS Tech Community|forum|2026-07-21|The Insider build is stuck at 29591, and the 29595 update cannot be detected.
+MS Tech Community|forum|2026-07-21|In the Insider build, all the pinned folders in Quick Access suddenly disappeared
+MS Tech Community|forum|2026-07-20|How to Stop the Win 11 KB5094126 Installation Loop and Safely Upgrade From March Baseline Risk-Free
+MS Tech Community|forum|2026-07-17|Urgent: Stuck KB5094126 (2026-06 Security Update) Loop on ASUS M413A
+MS Tech Community|forum|2026-07-16|26H2 -> 26220 -> 25H2 upgrade failures and Insider enrollment reverting
+MS Tech Community|forum|2026-07-15|Sleep and wake issues on PC
+MS Tech Community|forum|2026-07-15|Logic board or hardware component failures
+MS Tech Community|forum|2026-07-15|Security vulnerabilities or malware infections on Windows PC
+MS Tech Community|forum|2026-07-13|Bitte Geraete-UUID aus Windows Insider Program entfernen
+MS Tech Community|forum|2026-07-12|Can we get Microsoft to make the CorePC modular OS into a windows 12 smooth experience?
+MS Tech Community|forum|2026-07-10|After a problematic BIOS update

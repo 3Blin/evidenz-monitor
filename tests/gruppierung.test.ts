@@ -15,7 +15,10 @@ function inhalt(
   herausgeber = "Quelle A",
   auszug = "",
 ): VorInhalt {
-  return { inhaltId, titel, herausgeber, quellentyp: "forum", veroeffentlichtAm: null, auszug };
+  return {
+    inhaltId, titel, herausgeber, quellentyp: "forum", veroeffentlichtAm: null, auszug,
+    url: `https://${herausgeber.toLowerCase().replace(/\s+/g, "")}.example/${inhaltId}`,
+  };
 }
 
 describe("gruppiere", () => {
@@ -103,5 +106,123 @@ describe("gruppiere", () => {
 
   it("kommt mit einer leeren Liste zurecht", () => {
     expect(gruppiere([])).toEqual([]);
+  });
+});
+
+describe("Kennungen trennen", () => {
+  it("verschmilzt nicht drei Sicherheitslücken wegen ihrer Formelwörter", () => {
+    // Der Fund aus der Messung an den echten Daten: Titelähnlichkeit 0,64
+    // allein durch "Microsoft ... Remote Code Execution Vulnerability". Weil
+    // MSRC eine Herstellerquelle ist, stand das Ergebnis auf Stufe 6 -
+    // eine amtlich klingende Aussage über einen Sachverhalt, den es so nicht
+    // gibt.
+    const gruppen = gruppiere([
+      inhalt("1", "CVE-2026-54120 Microsoft Surface Remote Code Execution Vulnerability", "MSRC"),
+      inhalt("2", "CVE-2026-56165 Microsoft Account Remote Code Execution Vulnerability", "MSRC"),
+      inhalt("3", "CVE-2026-50517 Microsoft M365 Copilot Remote Code Execution Vulnerability", "MSRC"),
+    ]);
+    expect(gruppen).toHaveLength(3);
+  });
+
+  it("trennt auch bei sehr hoher Titelähnlichkeit", () => {
+    const gruppen = gruppiere([
+      inhalt("1", "CVE-2026-63136 Uncontrolled Resource Consumption in Elasticsearch"),
+      inhalt("2", "CVE-2026-56145 Uncontrolled Resource Consumption in Elasticsearch"),
+    ]);
+    expect(gruppen).toHaveLength(2);
+  });
+
+  it("trennt nicht, wenn nur einer der beiden eine Kennung trägt", () => {
+    // Nichts ist bewiesen: Der zweite Beitrag könnte dieselbe Sache meinen
+    // und die Kennung nur nicht nennen. Dann entscheidet der Titel.
+    const gruppen = gruppiere([
+      inhalt("1", "Drucker streikt nach Update KB5094126 im Dauerbetrieb"),
+      inhalt("2", "Drucker streikt nach Update im Dauerbetrieb"),
+    ]);
+    expect(gruppen).toHaveLength(1);
+  });
+});
+
+describe("Zeitfenster", () => {
+  function mitDatum(id: string, titel: string, datum: string): VorInhalt {
+    return { ...inhalt(id, titel), veroeffentlichtAm: new Date(datum) };
+  }
+
+  it("führt ähnliche Titel innerhalb des Zeitfensters zusammen", () => {
+    const gruppen = gruppiere([
+      mitDatum("1", "Monatlicher Sicherheitsbericht des Verbandes", "2026-07-01"),
+      mitDatum("2", "Monatlicher Sicherheitsbericht des Verbandes", "2026-07-20"),
+    ]);
+    expect(gruppen).toHaveLength(1);
+  });
+
+  it("trennt denselben Titel aus verschiedenen Jahrgängen", () => {
+    const gruppen = gruppiere([
+      mitDatum("1", "Monatlicher Sicherheitsbericht des Verbandes", "2026-01-01"),
+      mitDatum("2", "Monatlicher Sicherheitsbericht des Verbandes", "2026-07-01"),
+    ]);
+    expect(gruppen).toHaveLength(2);
+  });
+
+  it("lässt eine gemeinsame Kennung das Zeitfenster überschreiben", () => {
+    // Dieselbe Sicherheitslücke bleibt dieselbe, auch nach einem halben Jahr.
+    const gruppen = gruppiere([
+      mitDatum("1", "Erste Meldung zu KB5094126", "2026-01-01"),
+      mitDatum("2", "Ganz anders formulierter Nachtrag zu KB5094126", "2026-07-01"),
+    ]);
+    expect(gruppen).toHaveLength(1);
+  });
+
+  it("gruppiert weiterhin, wenn ein Datum fehlt", () => {
+    const gruppen = gruppiere([
+      { ...inhalt("1", "Gleicher Titel ohne Datum"), veroeffentlichtAm: null },
+      mitDatum("2", "Gleicher Titel ohne Datum", "2026-07-01"),
+    ]);
+    expect(gruppen).toHaveLength(1);
+  });
+});
+
+describe("Verweise", () => {
+  it("führt zwei Beiträge zusammen, die dieselbe fremde Seite verlinken", () => {
+    const gruppen = gruppiere([
+      inhalt("1", "Aggregator meldet Vorgang", "Aggregator A",
+        "Article URL: https://arstechnica.com/gadgets/2026/07/vorgang/"),
+      inhalt("2", "Ganz anderer Titel zum selben Fall", "Aggregator B",
+        "Quelle: https://www.arstechnica.com/gadgets/2026/07/vorgang?utm_source=rss"),
+    ]);
+    expect(gruppen).toHaveLength(1);
+  });
+
+  it("verbindet nicht über Verweise auf die eigene Plattform", () => {
+    const gruppen = gruppiere([
+      inhalt("1", "Erster Beitrag", "Forum",
+        "Comments URL: https://news.ycombinator.com/item?id=49031099"),
+      inhalt("2", "Zweiter Beitrag ohne Bezug", "Forum",
+        "Comments URL: https://news.ycombinator.com/item?id=49021080"),
+    ]);
+    expect(gruppen).toHaveLength(2);
+  });
+});
+
+describe("Prüfung gegen alle Mitglieder", () => {
+  it("nimmt einen Beitrag auf, der nur zum zweiten Mitglied passt", () => {
+    // Vorher entschied allein das erste Mitglied einer Gruppe. Damit hing das
+    // Ergebnis an der Reihenfolge der Beiträge statt an ihrem Inhalt.
+    const gruppen = gruppiere([
+      inhalt("A", "Drucker verliert Farbe nach Aktualisierung"),
+      inhalt("B", "Drucker verliert Farbe nach Aktualisierung im Netzwerk"),
+      inhalt("C", "Verliert Farbe nach Aktualisierung im Netzwerk beim Duplexdruck"),
+    ]);
+    expect(gruppen).toHaveLength(1);
+    expect(gruppen[0]).toHaveLength(3);
+  });
+
+  it("liefert dasselbe Ergebnis bei umgekehrter Reihenfolge", () => {
+    const eingabe = [
+      inhalt("A", "Drucker verliert Farbe nach Aktualisierung"),
+      inhalt("B", "Drucker verliert Farbe nach Aktualisierung im Netzwerk"),
+      inhalt("C", "Verliert Farbe nach Aktualisierung im Netzwerk beim Duplexdruck"),
+    ];
+    expect(gruppiere(eingabe).length).toBe(gruppiere([...eingabe].reverse()).length);
   });
 });

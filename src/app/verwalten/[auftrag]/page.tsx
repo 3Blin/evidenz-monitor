@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { angemeldeterNutzer, supabaseAufServer } from "@/lib/supabase-server";
 import { AuftragsFormular, type AuftragVollstaendig } from "./auftrags-formular";
 import { QuellenVerwaltung, type QuelleZeile } from "./quellen-verwaltung";
+import { QuellenEinfuegen } from "./quellen-einfuegen";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function AuftragBearbeiten({
     .from("auftraege")
     // Eine zusammenhängende Zeichenkette, nicht verkettet: supabase-js leitet
     // den Rückgabetyp aus diesem Literal ab.
-    .select("id,name,zielbeschreibung,fragestellung,suchbegriffe,pflichtbegriffe,ausschlussbegriffe,mindest_treffer,intervall_minuten,aktiv,oeffentliche_demo")
+    .select("id,name,zielbeschreibung,fragestellung,suchbegriffe,pflichtbegriffe,ausschlussbegriffe,mindest_treffer,intervall_min_minuten,intervall_max_minuten,aktueller_takt_minuten,naechster_lauf_am,aktiv,oeffentliche_demo")
     .eq("id", auftragId)
     .maybeSingle();
 
@@ -71,6 +72,8 @@ export default async function AuftragBearbeiten({
 
       <AuftragsFormular auftrag={auftrag as AuftragVollstaendig} />
       <QuellenVerwaltung auftragId={auftragId} quellen={(quellen ?? []) as QuelleZeile[]} />
+
+      <QuellenEinfuegen auftragId={auftragId} />
     </main>
   );
 }

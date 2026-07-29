@@ -1,0 +1,70 @@
+# Zeitplan für Sammeln und Auswerten (ADR 0012).
+#
+# Warum hier und nicht als Vercel-Cron: Die Läufe brauchen einen direkten
+# Datenbankzugang (DATABASE_URL). Die Weboberfläche hat den bewusst nicht und
+# soll ihn auch nicht bekommen - sie liest ausschließlich über die geprüfte
+# Datenbankfunktion (ADR 0005). Ein Cron-Auftrag bei Vercel müsste diesen
+# Vertrag brechen. Hier bleiben die Läufe das, was sie sind: Läufe auf einer
+# Maschine, mit denselben Skripten wie von Hand.
+#
+# Der Takt dieses Workflows ist nicht der Takt der Aufträge. Dieser Workflow
+# klopft nur regelmäßig an; welcher Auftrag tatsächlich abgerufen wird,
+# entscheidet die Taktung je Auftrag (src/lib/taktung.ts). Läuft nichts an,
+# endet der Lauf nach wenigen Sekunden mit "Kein Auftrag faellig".
+name: Takt
+
+on:
+  schedule:
+    # Alle 15 Minuten. Die feinste sinnvolle Einstellung, denn GitHub führt
+    # geplante Läufe frühestens alle 5 Minuten und bei Andrang verspätet aus.
+    - cron: "*/15 * * * *"
+  # Von Hand auslösbar - für den ersten Lauf und zum Nachsehen.
+  workflow_dispatch:
+    inputs:
+      alle:
+        description: "Alle Aufträge abrufen, unabhängig von ihrer Taktung"
+        type: boolean
+        default: false
+
+# Zwei gleichzeitige Läufe würden dieselben Quellen doppelt abrufen und
+# einander die Taktung überschreiben.
+concurrency:
+  group: takt
+  cancel-in-progress: false
+
+jobs:
+  takt:
+    runs-on: ubuntu-latest
+    # Ohne Zugangsdaten kann der Lauf nichts tun. Das ist kein Fehler, sondern
+    # der Zustand vor der Einrichtung - deshalb wird er übersprungen und nicht
+    # als Fehlschlag gemeldet.
+    if: ${{ github.repository_owner != '' }}
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Zugangsdaten prüfen
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::DATABASE_URL ist nicht hinterlegt - der Zeitplan läuft leer."
+            echo "ueberspringen=ja" >> "$GITHUB_ENV"
+          fi
+
+      - name: Sammeln
+        if: env.ueberspringen != 'ja'
+        run: npm run sammeln ${{ inputs.alle && '-- --alle' || '' }}
+
+      - name: Auswerten
+        if: env.ueberspringen != 'ja'
+        run: npm run auswerten
