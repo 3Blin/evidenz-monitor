@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { angemeldeterNutzer, supabaseAufServer } from "@/lib/supabase-server";
 import { AuftragsFormular, type AuftragVollstaendig } from "./auftrags-formular";
 import { QuellenVerwaltung, type QuelleZeile } from "./quellen-verwaltung";
+import { QuellenEinfuegen } from "./quellen-einfuegen";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,8 @@ export default async function AuftragBearbeiten({
 
       <AuftragsFormular auftrag={auftrag as AuftragVollstaendig} />
       <QuellenVerwaltung auftragId={auftragId} quellen={(quellen ?? []) as QuelleZeile[]} />
+
+      <QuellenEinfuegen auftragId={auftragId} />
     </main>
   );
 }

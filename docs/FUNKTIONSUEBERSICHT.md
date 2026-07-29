@@ -225,3 +225,17 @@ etwas läuft: Vorher passierte ohne Handaufruf gar nichts, und das Feld für den
 Abstand war zwar einstellbar, wurde aber von keinem Lauf gelesen.
 **Baustein:** Taktung · **Tests:** taktung.test.ts (21),
 taktung-datenbank.test.ts (7)
+
+## Quellen zu einer Fragestellung finden
+**Macht:** Ein Skript auf deinem Rechner (`sammler/notebooklm/`) lässt
+NotebookLM das Netz nach passenden Quellen durchsuchen und schreibt die
+Fundstellen in eine Datei. Deren Inhalt fügst du in der Verwaltung ein und
+wählst je Eintrag aus, was angelegt wird.
+**Existiert, damit:** ein neuer Auftrag nicht mit null Quellen dasteht. Anders
+als der KI-Vorschlag, der sich an Adressen *erinnert*, wird hier tatsächlich
+*gesucht* — die Adressen existieren.
+**Warum außerhalb der Plattform:** Das Werkzeug meldet sich mit dem ganzen
+Google-Konto an, nicht mit einem eng begrenzten Schlüssel. Ein solches
+Geheimnis gehört nicht auf einen Server. Der Umweg über die Datei ist die
+Trennfuge (ADR 0013).
+**Baustein:** Externer Sammler · **Tests:** vorschlagsdatei.test.ts (12)

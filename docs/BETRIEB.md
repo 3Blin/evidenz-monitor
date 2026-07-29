@@ -85,6 +85,20 @@ Ob eine Quelle als Feed oder als Webseite gelesen wird, entscheidet ihre
 Adresse: Endet sie auf `.rss`, `.xml`, `.atom` oder enthält sie `/feed`,
 wird sie als Feed gelesen, sonst als einzelne Webseite.
 
+## Quellen finden, wenn ein Auftrag zu wenig liefert
+
+Ein Auftrag ohne Quellen sammelt nichts. Zwei Wege, welche zu bekommen:
+
+1. **Schnell, ohne Zusatzwerkzeug:** In der Verwaltung unter *Filterregeln* →
+   *Vorschlag von der KI*. Nennt neben den Begriffen auch Quellen — allerdings
+   aus dem Gedächtnis des Sprachmodells, es kann Adressen erfinden.
+2. **Belastbar:** `sammler/notebooklm/` durchsucht das Netz wirklich. Läuft auf
+   deinem Rechner, schreibt eine Datei, die du in der Verwaltung unter *Quellen
+   aus einer Recherche übernehmen* einfügst. Anleitung und Warnhinweise stehen
+   in `sammler/notebooklm/README.md`.
+
+In beiden Fällen entscheidest du je Eintrag, was angelegt wird.
+
 ## Inhalte von einem eigenen Sammler einliefern
 
 Kanäle mit Anmeldezwang ruft die Software nicht selbst ab. Ein eigener
