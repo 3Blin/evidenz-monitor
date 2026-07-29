@@ -69,11 +69,26 @@ Der 15-Minuten-Takt des Workflows ist **nicht** der Takt der Aufträge. Der
 Workflow klopft nur an; welcher Auftrag abgerufen wird, entscheidet dessen
 eigene Taktung. Ist keiner fällig, endet der Lauf nach Sekunden.
 
-### 5. Die alte Spalte fällt weg
+### 5. Die alte Spalte fällt weg — aber in zwei Schritten
 Nicht danebenstehen lassen: Zwei Felder für denselben Zweck werden unweigerlich
 zu zwei Wahrheiten (ARCHITEKTUR-Regel 5). Der vorhandene Wert wird zur
 Untergrenze, das Vierfache zur Obergrenze — ein bestehender Auftrag läuft
 danach nicht seltener als vorher, kann sich bei Leerlauf aber zurücknehmen.
+
+Das Entfernen steht jedoch in einer **eigenen Migration** (0007). Zwischen dem
+Anwenden einer Migration und dem Ausliefern der neuen Anwendung liegt immer ein
+Zeitraum, in dem beide Fassungen auf dieselbe Datenbank sehen. Fiele die Spalte
+schon in 0006, bräche in genau diesem Zeitraum die noch laufende alte Fassung,
+die sie liest — das Bearbeiten eines Auftrags wäre bis zur Auslieferung kaputt.
+
+Verbindliche Reihenfolge:
+
+1. Migration 0006 anwenden (nur ergänzend, unschädlich für beide Fassungen)
+2. Neue Fassung ausliefern
+3. Migration 0007 anwenden
+
+Dieser Fehler steckte in der ersten Fassung dieser Entscheidung und fiel erst
+beim Abgleich mit dem Stand der Produktivdatenbank auf.
 
 ## Begründung
 Der Bereich löst die Aufgabe besser als jede feste Zahl, weil er die Frage

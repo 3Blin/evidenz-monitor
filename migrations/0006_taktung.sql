@@ -47,13 +47,19 @@ BEGIN
     UPDATE auftraege
        SET intervall_min_minuten = GREATEST(5, LEAST(43200, intervall_minuten)),
            intervall_max_minuten = GREATEST(5, LEAST(43200, intervall_minuten * 4));
-
-    -- Die alte Spalte fällt weg, statt daneben stehen zu bleiben. Zwei Felder
-    -- für denselben Zweck werden unweigerlich zu zwei Wahrheiten - genau das
-    -- verbietet ARCHITEKTUR-Regel 5. Der Wert ist oben übernommen.
-    ALTER TABLE auftraege DROP COLUMN intervall_minuten;
   END IF;
 END $$;
+
+-- Die alte Spalte bleibt hier ABSICHTLICH stehen und fällt erst in Migration
+-- 0007. Grund: Zwischen dem Anwenden einer Migration und dem Ausliefern der
+-- neuen Anwendung liegt immer ein Zeitraum, in dem beide Fassungen auf
+-- dieselbe Datenbank sehen. Fiele die Spalte schon hier, bräche in genau
+-- diesem Zeitraum die noch laufende alte Fassung, die sie liest.
+--
+-- Also in zwei Schritten: erst ergänzen (diese Migration, unschädlich für
+-- beide Fassungen), dann ausliefern, dann entfernen (0007). Dass zwei Felder
+-- für denselben Zweck zu zwei Wahrheiten werden, bleibt richtig - deshalb ist
+-- der zweite Schritt kein Vielleicht, sondern eine eigene Migration.
 
 -- Die Obergrenze darf nicht unter der Untergrenze liegen. Als Tabellenregel,
 -- weil sie zwei Spalten vergleicht.

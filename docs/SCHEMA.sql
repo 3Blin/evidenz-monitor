@@ -9,7 +9,8 @@
 --   0003  Relevanzregeln (Spalten an auftraege und quellen)
 --   0004  oeffentliche_auftraege, api_schluessel_speichern/zustand/entfernen
 --   0005  dashboard_daten mit Belegen, auftrag_uebernehmen, api_schluessel_geheim
---   0006  Taktung als Bereich; auftrag_uebernehmen nachgezogen
+--   0006  Taktung als Bereich (ergaenzend); auftrag_uebernehmen nachgezogen
+--   0007  alte Spalte intervall_minuten entfernen - ERST nach dem Ausliefern
 
 -- Beobachtungsauftrag: themenneutraler Datensatz, KEIN Code.
 CREATE TABLE auftraege (
