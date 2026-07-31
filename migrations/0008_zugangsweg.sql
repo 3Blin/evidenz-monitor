@@ -16,6 +16,12 @@
 -- Rückwärtsverträglich: Alle vorhandenen Zeilen bekommen 'automatisch', also
 -- genau das bisherige Verhalten. Die alte Fassung der Anwendung sieht die
 -- Spalte nicht und läuft unverändert weiter.
+--
+-- REIHENFOLGE: Diese Migration gehört VOR das Ausliefern der neuen Fassung.
+-- Sie ist ergänzend und damit für die alte Fassung unschädlich; die neue
+-- Fassung dagegen braucht die Spalte und bricht ohne sie. Beim ersten Mal war
+-- es andersherum angegeben, und der Sammellauf endete drei Stunden lang mit
+-- `column "zugangsweg" does not exist`. Siehe ADR 0014, Nachtrag.
 
 ALTER TABLE quellen
   ADD COLUMN IF NOT EXISTS zugangsweg TEXT NOT NULL DEFAULT 'automatisch'

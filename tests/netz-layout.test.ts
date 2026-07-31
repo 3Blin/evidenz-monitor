@@ -7,8 +7,10 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  alsViewBox, gruppenNummern, kantenMitte, kantenPfad, OHNE_GRUPPE, ordneAn, passendeAnsicht,
-  radius, verschobeneAnsicht, zusammenhangskomponenten, type NetzKante, type NetzKnoten,
+  alsViewBox, feldBreite, felderPassen, gekuerzt, gruppenNummern, kantenMitte, kantenPfad,
+  NAME_HOECHSTLAENGE,
+  OHNE_GRUPPE, ordneAn, passendeAnsicht, radius, verschobeneAnsicht, zusammenhangskomponenten,
+  type NetzKante, type NetzKnoten,
 } from "../src/lib/netz-layout";
 
 function knoten(id: string, gewicht = 5): NetzKnoten {
@@ -354,5 +356,62 @@ describe("Ausschnitt an die Zeichenfläche angleichen (ADR 0016)", () => {
       const a = passendeAnsicht(ordneAn(k, []), undefined, kaputt);
       expect(Number.isFinite(a.breite) && a.breite > 0, String(kaputt)).toBe(true);
     }
+  });
+});
+
+describe("Namensfeld unter dem Knoten (ADR 0017)", () => {
+  it("wächst mit der Länge des Namens", () => {
+    expect(feldBreite("MSRC")).toBeLessThan(feldBreite("heise online"));
+  });
+
+  it("hat auch bei leerem Namen eine Breite", () => {
+    expect(feldBreite("")).toBeGreaterThan(0);
+  });
+
+  it("kürzt lange Namen und zeigt das an", () => {
+    const lang = "Bundesministerium für Digitales und Verkehr";
+    const kurz = gekuerzt(lang);
+    expect(kurz.length).toBeLessThanOrEqual(NAME_HOECHSTLAENGE);
+    expect(kurz.endsWith("…")).toBe(true);
+  });
+
+  it("lässt kurze Namen unangetastet", () => {
+    expect(gekuerzt("MSRC")).toBe("MSRC");
+    expect(gekuerzt("  heise online  ")).toBe("heise online");
+  });
+});
+
+describe("Passen die Namensfelder? (ADR 0017)", () => {
+  const platziert = [
+    { id: "a", label: "heise online", quellentyp: "fachmedium", gewicht: 5, offiziell: false,
+      x: -100, y: 0, radius: 20 },
+    { id: "b", label: "MSRC", quellentyp: "fachmedium", gewicht: 5, offiziell: false,
+      x: 100, y: 0, radius: 20 },
+  ];
+
+  it("passt auf einer großen Fläche", () => {
+    // Maßstab 1 heißt: ein Bildschirmpunkt ist eine Zeichnungseinheit.
+    expect(felderPassen(platziert, 1)).toBe(true);
+  });
+
+  it("passt nicht mehr, wenn die Fläche klein ist", () => {
+    // Am Telefon ist ein Punkt mehrere Einheiten breit - dann werden aus
+    // lesbaren Feldern Balken, die einander überdecken.
+    expect(felderPassen(platziert, 4)).toBe(false);
+  });
+
+  it("stört sich nicht an Knoten, die übereinanderstehen", () => {
+    // Felder stehen nebeneinander, nicht übereinander.
+    const uebereinander = [
+      { ...platziert[0]!, x: 0, y: -300 },
+      { ...platziert[1]!, x: 0, y: 300 },
+    ];
+    expect(felderPassen(uebereinander, 4)).toBe(true);
+  });
+
+  it("verträgt einen einzelnen Knoten und unbrauchbare Maßstäbe", () => {
+    expect(felderPassen([platziert[0]!], 99)).toBe(true);
+    expect(felderPassen(platziert, 0)).toBe(true);
+    expect(felderPassen(platziert, Number.NaN)).toBe(true);
   });
 });

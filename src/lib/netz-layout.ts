@@ -341,8 +341,9 @@ export function passendeAnsicht(
     linksX = Math.min(linksX, k.x - k.radius);
     obenY = Math.min(obenY, k.y - k.radius);
     rechtsX = Math.max(rechtsX, k.x + k.radius);
-    // Unter dem Kreis steht der Name der Quelle - dafür etwas mehr Platz.
-    untenY = Math.max(untenY, k.y + k.radius + 20);
+    // Unter dem Kreis steht das Namensfeld (Kreisrand + 10, Höhe 20) - dafür
+    // etwas mehr Platz, sonst wird es am unteren Rand abgeschnitten.
+    untenY = Math.max(untenY, k.y + k.radius + 34);
   }
 
   return anVerhaeltnisAngleichen(
@@ -438,4 +439,81 @@ export function kantenMitte(
     x: (ax + bx) / 2 - (dy / laenge) * laenge * staerke * 0.5,
     y: (ay + by) / 2 + (dx / laenge) * laenge * staerke * 0.5,
   };
+}
+
+/**
+ * Breite eines Namensfelds unter einem Knoten.
+ *
+ * Vorbild ist ein gerahmtes Feld statt freistehenden Textes. Das ist nicht nur
+ * Zierde: Der Hintergrund trägt ein Raster, und heller Text darauf ist schwer
+ * zu lesen - am Telefon, wo alles kleiner ist, besonders.
+ *
+ * Gerechnet statt gemessen: In einer SVG-Zeichnung ist die Textbreite erst
+ * nach dem Zeichnen bekannt, und bis dahin stünde das Feld an der falschen
+ * Stelle. Die Schrift ist eine Festbreitenschrift, deshalb ist die Rechnung
+ * genau genug - jedes Zeichen ist gleich breit.
+ */
+export const ZEICHEN_BREITE = 0.62;
+export const FELD_POLSTER = 9;
+
+export function feldBreite(text: string, schriftgroesse = 11): number {
+  return text.length * schriftgroesse * ZEICHEN_BREITE + FELD_POLSTER * 2;
+}
+
+/** Höchstlänge eines Namens im Feld. Längere werden gekürzt statt umgebrochen. */
+export const NAME_HOECHSTLAENGE = 22;
+
+export function gekuerzt(text: string, hoechstens = NAME_HOECHSTLAENGE): string {
+  const sauber = text.trim();
+  if (sauber.length <= hoechstens) return sauber;
+  // Ein abgeschnittener Name mit Auslassungszeichen ist ehrlicher als einer,
+  // der einfach endet - man sieht, dass etwas fehlt.
+  return `${sauber.slice(0, hoechstens - 1)}…`;
+}
+
+/**
+ * Passen die Namensfelder nebeneinander, ohne sich zu überdecken?
+ *
+ * Die Felder haben eine feste Größe auf dem Bildschirm, die Anordnung eine in
+ * Zeichnungseinheiten. Am Telefon ist ein Bildschirmpunkt viele
+ * Zeichnungseinheiten breit - dort wurden aus lesbaren Feldern plötzlich
+ * Balken, die einander überdeckten.
+ *
+ * Statt eine Bildschirmbreite zu raten, ab der es "wohl passt", wird gerechnet:
+ * Wie weit stehen die nächsten Nachbarn auseinander, und wie breit ist das
+ * breiteste Feld? Passt es nicht, zeigt die Ansicht den Namen nur noch für den
+ * Knoten, auf den gezeigt wird. Weniger Beschriftung ist besser als
+ * unleserliche.
+ */
+export function felderPassen(
+  knoten: readonly PlatzierterKnoten[],
+  skala: number,
+  schriftgroesse = 11,
+): boolean {
+  if (knoten.length < 2) return true;
+  if (!Number.isFinite(skala) || skala <= 0) return true;
+
+  // Ein Feld sitzt unter seinem Knoten: Kreisrand + 10, Höhe 20, beides in
+  // Bildschirmpunkten. Zwei Felder können sich senkrecht nur berühren, wenn
+  // ihre Knoten näher beieinanderliegen als diese Strecke.
+  const senkrechteFreiheit = Math.max(...knoten.map((k) => k.radius)) + 34 * skala;
+
+  let engster = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < knoten.length; i++) {
+    for (let j = i + 1; j < knoten.length; j++) {
+      const a = knoten[i];
+      const b = knoten[j];
+      if (!a || !b) continue;
+      // Zwei Knoten übereinander stören einander nicht - ihre Felder liegen
+      // untereinander. Nur der waagerechte Abstand entscheidet.
+      if (Math.abs(a.y - b.y) > senkrechteFreiheit) continue;
+      engster = Math.min(engster, Math.abs(a.x - b.x));
+    }
+  }
+  if (!Number.isFinite(engster)) return true;
+
+  const breitestes = Math.max(
+    ...knoten.map((k) => feldBreite(gekuerzt(k.label), schriftgroesse)),
+  );
+  return breitestes * skala <= engster;
 }

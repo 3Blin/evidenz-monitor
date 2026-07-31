@@ -149,6 +149,29 @@ Verworfene Alternativen:
   genau das bisherige Verhalten. Die alte Fassung der Anwendung sieht die
   Spalte nicht und läuft unverändert weiter — anders als bei ADR 0012 ist hier
   kein zweiter Migrationsschritt nötig, weil nichts entfernt wird.
+
+### Nachtrag: Die Reihenfolge war falsch angegeben
+Zur Auslieferung stand hier und im Pull Request, die Migration sei **nach** dem
+Mergen anzuwenden. Das ist falsch herum, und es hat das System für drei Stunden
+lahmgelegt: Der Sammellauf auf `main` fragte `zugangsweg` ab, die Datenbank
+hatte die Spalte noch nicht, jeder Lauf endete mit
+`column "zugangsweg" does not exist` — und schickte eine Fehlermeldung.
+
+ADR 0012 hatte für den umgekehrten Fall die richtige Regel aufgestellt: Eine
+Spalte darf erst **nach** dem Ausliefern entfernt werden, damit die noch
+laufende alte Fassung nicht bricht. Die Gegenrichtung stand dort nicht, gilt
+aber genauso: Eine Spalte muss **vor** dem Ausliefern angelegt werden, damit
+die neue Fassung sie vorfindet.
+
+Verbindlich, für jede künftige Migration:
+
+1. Ergänzende Migration anwenden (Spalten anlegen, Vorgabewerte setzen)
+2. Neue Fassung ausliefern
+3. Entfernende Migration anwenden (alte Spalten löschen)
+
+Beide Enden derselben Regel: Zwischen Schritt 1 und 2 muss die **alte**
+Anwendung weiterlaufen, zwischen 2 und 3 die **neue**. Wer einen Schritt
+überspringt, bricht genau eine der beiden.
 - Die Adapter sind gegen nachgebildete Antworten geprüft, nicht gegen eine
   laufende Instanz. Ein Test, der ein fremdes Netz braucht, prüft am Ende
   dessen Erreichbarkeit und nicht unseren Code. Dass die JSON-Schnittstelle der
