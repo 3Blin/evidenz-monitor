@@ -51,7 +51,7 @@ export default async function AuftragBearbeiten({
 
   const { data: quellen } = await supabase
     .from("quellen")
-    .select("id,url,typ,herausgeber,sprache,aktiv,themenspezifisch")
+    .select("id,url,typ,herausgeber,sprache,aktiv,themenspezifisch,zugangsweg")
     .eq("auftrag_id", auftragId)
     .order("herausgeber");
 

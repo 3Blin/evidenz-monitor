@@ -15,7 +15,7 @@
  *   Titel und Fließtext zusätzliche Angriffsfläche ohne echten Gewinn
  *   (Haltung aus ADR 0003).
  */
-import { auszugBilden, type QuellenAdapter, type RohInhalt } from "./adapter";
+import { auszugBilden, begrenztLesen, type QuellenAdapter, type RohInhalt } from "./adapter";
 
 /** Obergrenze der gelesenen Antwort. Schützt vor überlangen Seiten. */
 export const MAX_BYTES = 2_000_000;
@@ -107,30 +107,6 @@ export function extrahiereAusHtml(
   };
 }
 
-/** Liest die Antwort, bricht aber bei MAX_BYTES ab. */
-async function begrenztLesen(antwort: Response): Promise<string> {
-  const koerper = antwort.body;
-  if (!koerper) return "";
-  const leser = koerper.getReader();
-  const teile: Uint8Array[] = [];
-  let gelesen = 0;
-  try {
-    for (;;) {
-      const { done, value } = await leser.read();
-      if (done) break;
-      if (!value) continue;
-      gelesen += value.byteLength;
-      teile.push(value);
-      if (gelesen >= MAX_BYTES) break;
-    }
-  } finally {
-    await leser.cancel().catch(() => undefined);
-  }
-  return new TextDecoder("utf-8").decode(
-    Buffer.concat(teile.map((t) => Buffer.from(t))).subarray(0, MAX_BYTES),
-  );
-}
-
 export const webAdapter: QuellenAdapter = {
   name: "web",
   async abrufen(url: string, signal?: AbortSignal): Promise<readonly RohInhalt[]> {
@@ -168,6 +144,6 @@ export const webAdapter: QuellenAdapter = {
       ? new Date(kopfDatum)
       : null;
 
-    return [extrahiereAusHtml(await begrenztLesen(antwort), ziel.href, ersatzDatum)];
+    return [extrahiereAusHtml(await begrenztLesen(antwort, MAX_BYTES), ziel.href, ersatzDatum)];
   },
 };

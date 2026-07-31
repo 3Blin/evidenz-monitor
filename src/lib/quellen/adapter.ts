@@ -27,3 +27,33 @@ export function auszugBilden(text: string, maxZeichen = 1200): string {
   if (bereinigt.length <= maxZeichen) return bereinigt;
   return `${bereinigt.slice(0, maxZeichen)} […]`;
 }
+
+/**
+ * Liest eine Antwort, bricht aber bei maxBytes ab.
+ *
+ * Gemeinsam für alle Adapter, weil jeder von ihnen dieselbe Gefahr hat: Ein
+ * fremder Server bestimmt, wie lang seine Antwort ist. Ohne Obergrenze
+ * entscheidet er damit über unseren Speicher.
+ */
+export async function begrenztLesen(antwort: Response, maxBytes: number): Promise<string> {
+  const koerper = antwort.body;
+  if (!koerper) return "";
+  const leser = koerper.getReader();
+  const teile: Uint8Array[] = [];
+  let gelesen = 0;
+  try {
+    for (;;) {
+      const { done, value } = await leser.read();
+      if (done) break;
+      if (!value) continue;
+      gelesen += value.byteLength;
+      teile.push(value);
+      if (gelesen >= maxBytes) break;
+    }
+  } finally {
+    await leser.cancel().catch(() => undefined);
+  }
+  return new TextDecoder("utf-8").decode(
+    Buffer.concat(teile.map((t) => Buffer.from(t))).subarray(0, maxBytes),
+  );
+}

@@ -73,3 +73,13 @@
   je Eintrag ausgewählt. Der Umweg über die Datei ist die Trennfuge, an der die
   Zugangsdaten hängen bleiben. NotebookLM ersetzt keine Feeds: Es hilft, sie zu
   finden.
+- **0014 Suche und GDELT als Zugangswege:** Foren und Nischenblogs sind die
+  Frühwarnkanäle — man kennt sie vorher nicht und sie haben keinen Feed. Ein
+  Feed setzt voraus, dass man die Quelle gefunden hat; eine Suche setzt nur
+  voraus, dass man die Frage kennt. Deshalb zwei neue Adapter: die eigene
+  SearXNG-Instanz (Foren, Blogs, das ganze Netz) und GDELT (weltweite
+  Nachrichten mit Zeitpunkt der ersten Sichtung, für die Ursprungsfrage). Beide
+  ohne Schlüssel und ohne Kosten. Gewählt wird der Weg über die neue Spalte
+  `zugangsweg` und nicht über `typ`, weil `typ` sagt, WER veröffentlicht, und
+  davon die Reifegrad-Einstufung abhängt — der Zugangsweg sagt nur, WIE wir
+  lesen. Ein Treffer bleibt "irgendwo stand das", nie eine Bestätigung.

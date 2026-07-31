@@ -9,7 +9,10 @@ import { describe, it, expect } from "vitest";
 import {
   adapterFuerQuelle,
   istFeedAdresse,
+  istZugangsweg,
   EINGELIEFERTER_TYP,
+  ZUGANGSWEGE,
+  ZUGANGSWEG_TEXT,
 } from "../src/lib/quellen/registrierung";
 
 describe("Zuordnung des Zugangswegs", () => {
@@ -50,5 +53,56 @@ describe("Zuordnung des Zugangswegs", () => {
     expect(() =>
       adapterFuerQuelle({ url: "https://sammler.example/hermes", typ: EINGELIEFERTER_TYP }),
     ).toThrow(/eingeliefert/);
+  });
+});
+
+describe("Zugangsweg als gespeicherte Angabe (ADR 0014)", () => {
+  it("verhält sich ohne Angabe wie bisher", () => {
+    // Rückwärtsverträglichkeit: Zeilen, die vor Migration 0008 entstanden
+    // sind, kommen ohne diesen Wert an.
+    expect(adapterFuerQuelle({ url: "https://x.example/feed/", typ: "fachmedium" }).name).toBe("rss");
+    expect(
+      adapterFuerQuelle({ url: "https://x.example/feed/", typ: "fachmedium", zugangsweg: null }).name,
+    ).toBe("rss");
+    expect(
+      adapterFuerQuelle({ url: "https://x.example/a", typ: "fachmedium", zugangsweg: "automatisch" }).name,
+    ).toBe("web");
+  });
+
+  it("wählt Suche und GDELT, die man der Adresse nicht ansieht", () => {
+    // Genau der Fall, an dem die Erkennung an der Adresse scheitert: Eine
+    // Suchadresse sieht aus wie eine gewöhnliche Webseite.
+    const suchadresse = "https://search.n0de.online/search?q=Kabinett+Merz";
+    expect(adapterFuerQuelle({ url: suchadresse, typ: "api" }).name).toBe("web");
+    expect(adapterFuerQuelle({ url: suchadresse, typ: "api", zugangsweg: "suche" }).name).toBe("suche");
+    expect(
+      adapterFuerQuelle({
+        url: "https://api.gdeltproject.org/api/v2/doc/doc?query=test",
+        typ: "api",
+        zugangsweg: "gdelt",
+      }).name,
+    ).toBe("gdelt");
+  });
+
+  it("erzwingt Feed und Webseite gegen die Erkennung", () => {
+    expect(adapterFuerQuelle({ url: "https://x.example/a", typ: "fachmedium", zugangsweg: "feed" }).name)
+      .toBe("rss");
+    expect(adapterFuerQuelle({ url: "https://x.example/feed/", typ: "fachmedium", zugangsweg: "web" }).name)
+      .toBe("web");
+  });
+
+  it("deutet einen unbekannten Wert nicht, sondern meldet ihn", () => {
+    expect(() =>
+      adapterFuerQuelle({ url: "https://x.example/a", typ: "fachmedium", zugangsweg: "telepathie" }),
+    ).toThrow(/Unbekannter Zugangsweg/);
+  });
+
+  it("hat für jeden erlaubten Wert einen Klartext und eine Erkennung", () => {
+    for (const weg of ZUGANGSWEGE) {
+      expect(ZUGANGSWEG_TEXT[weg], weg).toBeTruthy();
+      expect(istZugangsweg(weg), weg).toBe(true);
+    }
+    expect(istZugangsweg("telepathie")).toBe(false);
+    expect(istZugangsweg(null)).toBe(false);
   });
 });
