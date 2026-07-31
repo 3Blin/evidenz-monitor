@@ -92,3 +92,14 @@
   frisch ist die Behauptung, alt der Gegenstand, also enger Takt bei weitem
   Rückblick. Das Zeitfenster wirkt tatsächlich: Der Auswertungslauf reicht es
   durch, und ein Test belegt es.
+- **0016 Netz und Liste lesbar machen:** Der Graph im Stil von Graphify —
+  gefüllte Knoten, Einfärbung nach Gruppen, Kantenbeschriftung nur bei Auswahl,
+  Nachbarschaft beim Zeigen hervorgehoben. Beim Nachsehen mit einem echten
+  Browser kamen vier Stellen heraus, an denen das Bild mehr behauptete als die
+  Daten hergaben: Jede unverbundene Quelle bekam eine eigene Farbe und sah aus
+  wie ein Befund; zwei verbundene Quellen standen weiter auseinander als von
+  einer fremden; die Anordnung fiel bei zwei Gruppen zu einer Reihe zusammen;
+  und „Widerlegt" stand als achter Balken einer Leiter da, las sich also als
+  höchste Stufe. Dazu: Die Leiter zeigt jetzt die Verteilung, die Liste lässt
+  sich sortieren, und „Zuerst: X · Datum" — die Kernfrage — steht ohne
+  Aufklappen da.
