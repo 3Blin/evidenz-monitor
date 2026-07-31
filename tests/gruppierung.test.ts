@@ -226,3 +226,34 @@ describe("Prüfung gegen alle Mitglieder", () => {
     expect(gruppiere(eingabe).length).toBe(gruppiere([...eingabe].reverse()).length);
   });
 });
+
+describe("Zeitfenster als Aufrufwert (ADR 0015)", () => {
+  // Zwei Beiträge mit gleichlautendem Titel, aber vier Jahre auseinander.
+  // Ohne Datum gälten sie als nah beieinander; deshalb tragen sie hier eines.
+  function mitDatum(id: string, titel: string, iso: string, herausgeber: string): VorInhalt {
+    return {
+      inhaltId: id, titel, herausgeber, quellentyp: "fachmedium",
+      veroeffentlichtAm: new Date(iso), auszug: "",
+      url: `https://${herausgeber}.example/${id}`,
+    };
+  }
+  const paar = [
+    mitDatum("1", "Warnung vor den Folgen der Umstellung", "2020-03-01T00:00:00Z", "a"),
+    mitDatum("2", "Warnung vor den Folgen der Umstellung", "2024-03-01T00:00:00Z", "b"),
+  ];
+
+  it("trennt sie im Vorgabefenster", () => {
+    expect(gruppiere(paar)).toHaveLength(2);
+  });
+
+  it("führt sie im weiten Rückblick zusammen", () => {
+    // Der Wert, den die Triage bei einer rückblickenden Frage vorschlägt.
+    // Ohne diesen Test wäre nicht belegt, dass der Wert überhaupt ankommt -
+    // und eine Einstellung, die nichts bewirkt, ist schlimmer als keine.
+    expect(gruppiere(paar, 3650)).toHaveLength(1);
+  });
+
+  it("trennt sie im engen Fenster einer frischen Behauptung", () => {
+    expect(gruppiere(paar, 14)).toHaveLength(2);
+  });
+});

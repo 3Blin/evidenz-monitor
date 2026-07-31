@@ -7,6 +7,7 @@
  */
 import pg from "pg";
 import { gruppiereMitBegruendung, klassifiziereGruppe, type VorInhalt } from "../src/lib/vorklassifikation";
+import { triage, BETRIEBSART_TEXT } from "../src/lib/triage";
 import { ermittleReifegrad, REGEL_VERSION, type Beleg } from "../src/lib/reifegrad";
 import { pruefeRelevanz, type RelevanzRegeln } from "../src/lib/relevanz";
 
@@ -17,6 +18,8 @@ interface InhaltZeile extends VorInhalt {
 
 interface AuftragZeile extends RelevanzRegeln {
   readonly id: string;
+  readonly fragestellung: string;
+  readonly zielbeschreibung: string;
 }
 
 async function main(): Promise<void> {
@@ -27,7 +30,8 @@ async function main(): Promise<void> {
     // wäre "LIMIT 1" ein stiller Datenverlust - der zweite Auftrag bekäme nie
     // eine Bewertung und sein Dashboard bliebe leer.
     const { rows: auftraege } = await db.query<AuftragZeile & { name: string }>(
-      `SELECT id, name, suchbegriffe, pflichtbegriffe, ausschlussbegriffe,
+      `SELECT id, name, fragestellung, zielbeschreibung,
+              suchbegriffe, pflichtbegriffe, ausschlussbegriffe,
               mindest_treffer AS "mindestTreffer"
          FROM auftraege WHERE aktiv = true ORDER BY erstellt_am`,
     );
@@ -74,7 +78,16 @@ async function werteAus(db: pg.Pool, auftrag: AuftragZeile): Promise<void> {
     await db.query("DELETE FROM meldungsgruppen WHERE auftrag_id=$1", [auftrag.id]);
     await db.query("DELETE FROM aussagen WHERE auftrag_id=$1", [auftrag.id]);
 
-    const gruppen = gruppiereMitBegruendung(inhalte);
+    // Das Zeitfenster kommt aus der Triage der Fragestellung (ADR 0015). Eine
+    // rückblickende Frage vergleicht über Jahre, eine frische Behauptung über
+    // Tage. Ein fester Wert wäre für beide falsch.
+    const befund = triage(auftrag.fragestellung, auftrag.zielbeschreibung);
+    process.stdout.write(
+      `Betriebsart: ${BETRIEBSART_TEXT[befund.betriebsart]}` +
+        ` · Rückblick: ${befund.zeitfensterTage} Tage · ${befund.begruendung}\n`,
+    );
+
+    const gruppen = gruppiereMitBegruendung(inhalte, befund.zeitfensterTage);
     const mehrfach = gruppen.filter((g) => g.inhalte.length > 1).length;
     process.stdout.write(
       `Meldungsgruppen: ${gruppen.length} · davon mit mehreren Belegen: ${mehrfach}\n`,

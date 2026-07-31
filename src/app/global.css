@@ -163,3 +163,10 @@ h1{font-size:clamp(28px,4.2vw,42px);font-weight:700;letter-spacing:-.03em;margin
 .feld-gruppe legend{padding:0 6px;font-size:13px;color:var(--text-leise)}
 .feld-paar{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:560px){.feld-paar{grid-template-columns:1fr}}
+
+/* --- Triage der Fragestellung (ADR 0015) --- */
+.hinweis-kasten{border:1px solid var(--linie);border-left:3px solid var(--akzent);
+  border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:8px;
+  background:var(--flaeche);font-size:13px;line-height:1.55}
+.hinweis-kasten p{margin:0}
+.hinweis-kasten .knopf{align-self:flex-start}

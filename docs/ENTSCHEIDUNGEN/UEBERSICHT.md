@@ -83,3 +83,12 @@
   `zugangsweg` und nicht über `typ`, weil `typ` sagt, WER veröffentlicht, und
   davon die Reifegrad-Einstufung abhängt — der Zugangsweg sagt nur, WIE wir
   lesen. Ein Treffer bleibt "irgendwo stand das", nie eine Bestätigung.
+- **0015 Triage der Fragestellung:** Dieselbe Maschinerie muss "Ich habe eben
+  gehört, dass …", "Wie entwickelt sich …" und "Wurde damals wirklich …"
+  bedienen — mit festem Takt und festem Zeitfenster ist sie für alle drei
+  falsch eingestellt. Drei Betriebsarten (akut, laufend, historisch) werden aus
+  dem Text der Frage abgeleitet, regelbasiert und deshalb erklärbar: Der Befund
+  nennt das Merkmal, das angesprochen hat. Eigener Fall ist "frisch über alt" —
+  frisch ist die Behauptung, alt der Gegenstand, also enger Takt bei weitem
+  Rückblick. Das Zeitfenster wirkt tatsächlich: Der Auswertungslauf reicht es
+  durch, und ein Test belegt es.
