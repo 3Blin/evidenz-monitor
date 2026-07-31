@@ -58,25 +58,148 @@ export function radius(gewicht: number): number {
 export function ordneAn(
   knoten: readonly NetzKnoten[],
   kanten: readonly NetzKante[],
+  verhaeltnis = 1.7,
 ): readonly PlatzierterKnoten[] {
   if (knoten.length === 0) return [];
 
   const gruppen = zusammenhangskomponenten(knoten, kanten);
+
+  // Verbundene Gruppen in die Mitte, Einzelgänger in einen Ring darum.
+  //
+  // Vorher lag jede Gruppe auf demselben großen Ring - auch jeder einzelne,
+  // unverbundene Knoten. Bei sieben Quellen mit einer Dreiergruppe standen die
+  // vier Einzelnen dadurch so weit auseinander, dass zwei Drittel der Fläche
+  // leer blieben und alles winzig wirkte. Der Kern der Aussage steht jetzt in
+  // der Mitte, das Unverbundene außen herum - und beides dicht.
+  const verbunden = gruppen.filter((g) => g.length > 1).sort((a, b) => b.length - a.length);
+  const einzeln = gruppen.filter((g) => g.length === 1).flatMap((g) => g);
+
   const platziert: PlatzierterKnoten[] = [];
+  let kernRadius = 0;
 
-  // Die Gruppen liegen auf einem Ring um die Mitte, die größte innen. So
-  // steht das dichteste Geflecht im Blickpunkt.
-  const sortiert = [...gruppen].sort((a, b) => b.length - a.length);
-  const ringRadius = sortiert.length === 1 ? 0 : 230 + sortiert.length * 26;
+  if (verbunden.length === 1) {
+    const gruppe = verbunden[0];
+    if (gruppe) {
+      platziert.push(...ordneGruppeAn(gruppe, 0, 0));
+      kernRadius = eigenRadiusVon(gruppe) + groessterRadius(gruppe);
+    }
+  } else if (verbunden.length > 1) {
+    // Mehrere Geflechte: selbst auf einem kleinen Ring, eng gesetzt.
+    const platzBedarf = verbunden.reduce(
+      (summe, g) => summe + eigenRadiusVon(g) * 2 + 70,
+      0,
+    );
+    const innen = Math.max(160, platzBedarf / (Math.PI * 2));
+    verbunden.forEach((gruppe, index) => {
+      const winkel = (index / verbunden.length) * Math.PI * 2;
+      platziert.push(
+        ...ordneGruppeAn(gruppe, Math.cos(winkel) * innen, Math.sin(winkel) * innen),
+      );
+    });
+    kernRadius = innen + Math.max(...verbunden.map((g) => eigenRadiusVon(g) + groessterRadius(g)));
+  }
 
-  sortiert.forEach((gruppe, index) => {
-    const winkel = (index / sortiert.length) * Math.PI * 2 - Math.PI / 2;
-    const mitteX = Math.cos(winkel) * ringRadius;
-    const mitteY = Math.sin(winkel) * ringRadius;
-    platziert.push(...ordneGruppeAn(gruppe, mitteX, mitteY));
-  });
+  if (einzeln.length > 0) {
+    // Der Ring muss den Kern umschließen und zugleich weit genug sein, dass
+    // sich die Einzelnen nicht berühren. Es gilt die größere der beiden
+    // Bedingungen; alles Weitere wäre nur Leerraum.
+    const umfang = einzeln.reduce((summe, k) => summe + radius(k.gewicht) * 2 + 64, 0);
+    const ringRadius = Math.max(
+      kernRadius + groessterRadius(einzeln) + 96,
+      umfang / (Math.PI * 2),
+      einzeln.length === 1 ? 0 : 150,
+    );
+    einzeln.forEach((k, i) => {
+      // Ein einzelner Knoten ohne Kern steht in der Mitte, nicht daneben.
+      if (einzeln.length === 1 && kernRadius === 0) {
+        platziert.push({ ...k, x: 0, y: 0, radius: radius(k.gewicht) });
+        return;
+      }
+      // Um einen halben Schritt versetzt gegen den inneren Ring.
+      //
+      // Ohne diesen Versatz stehen bei zwei Gruppen und zwei Einzelnen alle
+      // vier auf derselben Waagerechten: Zwei Punkte auf einem Kreis liegen
+      // einander gegenüber, und beide Kreise begannen beim selben Winkel. Das
+      // Ergebnis war kein Netz, sondern eine Reihe - und der Ausschnitt musste
+      // in der Höhe mit Leerraum aufgefüllt werden, bis alles winzig war.
+      const winkel = ((i + 0.5) / einzeln.length) * Math.PI * 2;
+      platziert.push({
+        ...k,
+        x: Math.cos(winkel) * ringRadius,
+        y: Math.sin(winkel) * ringRadius,
+        radius: radius(k.gewicht),
+      });
+    });
+  }
 
-  return platziert;
+  return inForm(platziert, verhaeltnis);
+}
+
+/**
+ * Bringt die Anordnung in die Form der Zeichenfläche.
+ *
+ * Die Ringe oben sind Kreise. Ein kreisrundes Bild in einer breiten Karte lässt
+ * links und rechts je ein Viertel leer; in einer hohen Karte oben und unten.
+ * Beides ist derselbe Fehler, nur gespiegelt - und am Telefon ist er der
+ * schlimmere, weil dort ohnehin wenig Platz ist. Genau darauf ging die erste
+ * Rückmeldung: "am Handy sehe ich einen".
+ *
+ * Deshalb wird die längere Achse gedehnt, nie die kürzere gestaucht. Das ist
+ * unbedenklich für die Überschneidungsfreiheit: Jeder Abstand auf der gedehnten
+ * Achse wächst, jeder auf der anderen bleibt - kein Paar kommt einander näher.
+ *
+ * Die Obergrenze verhindert, dass ein sehr schmales Fenster die Anordnung zu
+ * einer Linie plattdrückt, in der man keine Nachbarschaft mehr erkennt.
+ */
+export const GROESSTE_DEHNUNG = 2.2;
+
+function inForm(
+  knoten: readonly PlatzierterKnoten[],
+  verhaeltnis: number,
+): readonly PlatzierterKnoten[] {
+  if (!Number.isFinite(verhaeltnis) || verhaeltnis <= 0 || knoten.length < 2) return knoten;
+
+  // Gemessen statt angenommen: Welche Achse zu kurz ist, hängt daran, wie die
+  // Knoten tatsächlich liegen - und das wechselt mit der Zahl der Gruppen. Eine
+  // fest gewählte Achse zu dehnen half in der Hälfte der Fälle nicht.
+  let breite = 0;
+  let hoehe = 0;
+  for (const a of knoten) {
+    for (const b of knoten) {
+      breite = Math.max(breite, Math.abs(a.x - b.x));
+      hoehe = Math.max(hoehe, Math.abs(a.y - b.y));
+    }
+  }
+  if (breite < 1 || hoehe < 1) return knoten;
+
+  const ist = breite / hoehe;
+  if (ist < verhaeltnis) {
+    const dehnung = Math.min(GROESSTE_DEHNUNG, verhaeltnis / ist);
+    return knoten.map((k) => ({ ...k, x: k.x * dehnung }));
+  }
+  const dehnung = Math.min(GROESSTE_DEHNUNG, ist / verhaeltnis);
+  return knoten.map((k) => ({ ...k, y: k.y * dehnung }));
+}
+
+function groessterRadius(gruppe: readonly NetzKnoten[]): number {
+  return gruppe.length === 0 ? 0 : Math.max(...gruppe.map((k) => radius(k.gewicht)));
+}
+
+/**
+ * Radius des Kreises, auf dem die Mitglieder einer Gruppe liegen.
+ *
+ * Die Untergrenze hängt an der Knotengröße und nicht mehr an einer festen Zahl.
+ * Vorher standen 120 dort - bei einer Zweiergruppe lagen deren Mitglieder damit
+ * 240 Einheiten auseinander, während der Ring der Unverbundenen bei 146 lag.
+ * Zwei verbundene Quellen standen also weiter voneinander entfernt als von
+ * einer, mit der sie nichts zu tun haben; das Bild sagte das Gegenteil dessen,
+ * was gemeint war. Der Test hat es gefunden, nicht das Hinsehen.
+ */
+function eigenRadiusVon(gruppe: readonly NetzKnoten[]): number {
+  if (gruppe.length <= 1) return 0;
+  const groesster = groessterRadius(gruppe);
+  const umfang = gruppe.length * (groesster * 2 + 46);
+  return Math.max(groesster + 24, umfang / (Math.PI * 2));
 }
 
 /** Knoten einer Gruppe kreisförmig um ihren Mittelpunkt. */
@@ -92,12 +215,10 @@ function ordneGruppeAn(
   }
 
   // Abstand so wählen, dass sich auch die größten Kreise nicht berühren.
-  const groesster = Math.max(...gruppe.map((k) => radius(k.gewicht)));
-  const umfang = gruppe.length * (groesster * 2 + 46);
-  const eigenRadius = Math.max(120, umfang / (Math.PI * 2));
+  const eigenRadius = eigenRadiusVon(gruppe);
 
   return gruppe.map((k, i) => {
-    const winkel = (i / gruppe.length) * Math.PI * 2 - Math.PI / 2;
+    const winkel = (i / gruppe.length) * Math.PI * 2;
     return {
       ...k,
       x: mitteX + Math.cos(winkel) * eigenRadius,
@@ -105,6 +226,51 @@ function ordneGruppeAn(
       radius: radius(k.gewicht),
     };
   });
+}
+
+/**
+ * Ordnet jedem Knoten die Nummer seiner Gruppe zu.
+ *
+ * Gemeint ist damit dasselbe wie bei `zusammenhangskomponenten`: eine Menge von
+ * Quellen, die über Belege miteinander verbunden sind. Für die Einfärbung ist
+ * das die aussagekräftigste Einteilung, die sich ohne Sprachverständnis
+ * gewinnen lässt - gleiche Farbe heißt "diese Quellen berichten nachweislich
+ * über dieselben Vorgänge".
+ *
+ * Bewusst keine Gemeinschaftserkennung im engeren Sinn (Leiden, Louvain): Die
+ * würde innerhalb einer Komponente weiter unterteilen. Bei Netzen dieser Größe
+ * gäbe es dafür nichts zu tun, und ein Verfahren einzubauen, dessen Nutzen erst
+ * bei tausend Knoten beginnt, wäre Vorratshaltung.
+ *
+ * Ein Knoten ohne jede Verbindung bekommt OHNE_GRUPPE. Ihm eine eigene Farbe
+ * zu geben wäre falsch: Er bildet keine Gruppe, er steht allein. Vier
+ * Einzelgänger in vier Farben sahen aus wie vier Befunde, obwohl es keiner
+ * war - und sie übertönten die Gruppe, um die es geht.
+ *
+ * Die Nummern sind stabil: größte Gruppe zuerst, bei Gleichstand nach Kennung.
+ * Sonst wechselten die Farben bei jedem Laden der Seite.
+ */
+export const OHNE_GRUPPE = -1;
+
+export function gruppenNummern(
+  knoten: readonly NetzKnoten[],
+  kanten: readonly NetzKante[],
+): ReadonlyMap<string, number> {
+  const gruppen = [...zusammenhangskomponenten(knoten, kanten)].sort((a, b) => {
+    if (b.length !== a.length) return b.length - a.length;
+    return (a[0]?.id ?? "").localeCompare(b[0]?.id ?? "");
+  });
+  const nummern = new Map<string, number>();
+  let naechste = 0;
+  for (const gruppe of gruppen) {
+    if (gruppe.length === 1) {
+      for (const k of gruppe) nummern.set(k.id, OHNE_GRUPPE);
+      continue;
+    }
+    for (const k of gruppe) nummern.set(k.id, naechste);
+    naechste++;
+  }
+  return nummern;
 }
 
 /** Zerlegt das Netz in Gruppen, die untereinander verbunden sind. */
@@ -157,8 +323,14 @@ export function zusammenhangskomponenten(
 export function passendeAnsicht(
   knoten: readonly PlatzierterKnoten[],
   rand = 74,
+  zielVerhaeltnis?: number,
 ): Ausschnitt {
-  if (knoten.length === 0) return { x: -200, y: -140, breite: 400, hoehe: 280 };
+  if (knoten.length === 0) {
+    return anVerhaeltnisAngleichen(
+      { x: -200, y: -140, breite: 400, hoehe: 280 },
+      zielVerhaeltnis,
+    );
+  }
 
   let linksX = Infinity;
   let obenY = Infinity;
@@ -173,12 +345,39 @@ export function passendeAnsicht(
     untenY = Math.max(untenY, k.y + k.radius + 20);
   }
 
-  return {
-    x: linksX - rand,
-    y: obenY - rand,
-    breite: Math.max(1, rechtsX - linksX + rand * 2),
-    hoehe: Math.max(1, untenY - obenY + rand * 2),
-  };
+  return anVerhaeltnisAngleichen(
+    {
+      x: linksX - rand,
+      y: obenY - rand,
+      breite: Math.max(1, rechtsX - linksX + rand * 2),
+      hoehe: Math.max(1, untenY - obenY + rand * 2),
+    },
+    zielVerhaeltnis,
+  );
+}
+
+/**
+ * Weitet den Ausschnitt auf das Seitenverhältnis der Zeichenfläche.
+ *
+ * Ohne das bleibt ein Rest, den man nicht wegbekommt: Eine SVG-Zeichnung passt
+ * ihren Ausschnitt in die Fläche ein und lässt an zwei Seiten Leerraum, wenn
+ * die Verhältnisse nicht übereinstimmen. In der Karte des Dashboards waren das
+ * oben und unten je gut zweihundert Punkte - ein Viertel der Fläche für nichts.
+ *
+ * Geweitet wird nur, nie beschnitten: Sonst verschwänden Knoten am Rand, und
+ * genau das war der Mangel, den passendeAnsicht beheben sollte.
+ */
+function anVerhaeltnisAngleichen(a: Ausschnitt, zielVerhaeltnis?: number): Ausschnitt {
+  if (!zielVerhaeltnis || !Number.isFinite(zielVerhaeltnis) || zielVerhaeltnis <= 0) return a;
+  const ist = a.breite / a.hoehe;
+  if (Math.abs(ist - zielVerhaeltnis) < 0.01) return a;
+
+  if (ist < zielVerhaeltnis) {
+    const breite = a.hoehe * zielVerhaeltnis;
+    return { ...a, x: a.x - (breite - a.breite) / 2, breite };
+  }
+  const hoehe = a.breite / zielVerhaeltnis;
+  return { ...a, y: a.y - (hoehe - a.hoehe) / 2, hoehe };
 }
 
 /** Ausschnitt nach Vergrößerung und Verschiebung durch die Nutzerin. */
@@ -203,4 +402,40 @@ export function verschobeneAnsicht(
 /** Ausschnitt als Angabe für das viewBox-Merkmal einer SVG-Zeichnung. */
 export function alsViewBox(a: Ausschnitt): string {
   return `${a.x.toFixed(1)} ${a.y.toFixed(1)} ${a.breite.toFixed(1)} ${a.hoehe.toFixed(1)}`;
+}
+
+/**
+ * Kante als leicht gebogene Linie.
+ *
+ * Zwei gerade Linien zwischen denselben Punkten liegen übereinander; gebogene
+ * fächern auf und bleiben einzeln erkennbar. Die Krümmung ist an die Länge
+ * gekoppelt, damit kurze Kanten nicht zu Bögen werden.
+ */
+export function kantenPfad(
+  ax: number, ay: number, bx: number, by: number, staerke = 0.12,
+): string {
+  const mx = (ax + bx) / 2;
+  const my = (ay + by) / 2;
+  // Senkrechte auf der Verbindung - dorthin wird der Scheitel verschoben.
+  const dx = bx - ax;
+  const dy = by - ay;
+  const laenge = Math.hypot(dx, dy) || 1;
+  const kx = mx - (dy / laenge) * laenge * staerke;
+  const ky = my + (dx / laenge) * laenge * staerke;
+  return `M ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${kx.toFixed(1)} ${ky.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`;
+}
+
+/** Scheitelpunkt derselben Kurve - dort sitzt die Beschriftung. */
+export function kantenMitte(
+  ax: number, ay: number, bx: number, by: number, staerke = 0.12,
+): { x: number; y: number } {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const laenge = Math.hypot(dx, dy) || 1;
+  // Der Scheitel einer quadratischen Kurve liegt auf halbem Weg zum
+  // Steuerpunkt, nicht auf ihm.
+  return {
+    x: (ax + bx) / 2 - (dy / laenge) * laenge * staerke * 0.5,
+    y: (ay + by) / 2 + (dx / laenge) * laenge * staerke * 0.5,
+  };
 }

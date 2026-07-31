@@ -1,16 +1,24 @@
 /**
  * Quellen eines Auftrags verwalten.
  *
- * Der Zugangsweg wird nicht eingestellt: Ob ein Feed oder eine Webseite
- * gelesen wird, erkennt der Sammellauf an der Adresse (ADR 0007). Eine
- * zusätzliche Auswahl hier wäre eine zweite Wahrheit, die auseinanderlaufen kann.
+ * Der Zugangsweg steht auf "Automatisch erkennen" und muss im Regelfall nicht
+ * angefasst werden: Ob ein Feed oder eine Webseite gelesen wird, erkennt der
+ * Sammellauf an der Adresse (ADR 0007). Umstellen muss man ihn nur für Wege,
+ * die man einer Adresse nicht ansieht - Suche und GDELT (ADR 0014).
  */
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseImBrowser } from "@/lib/supabase-browser";
-import { istFeedAdresse } from "@/lib/quellen/registrierung";
+import {
+  istFeedAdresse,
+  istZugangsweg,
+  ZUGANGSWEGE,
+  ZUGANGSWEG_TEXT,
+  ZUGANGSWEG_VORGABE,
+  type Zugangsweg,
+} from "@/lib/quellen/registrierung";
 
 export interface QuelleZeile {
   readonly id: string;
@@ -20,7 +28,29 @@ export interface QuelleZeile {
   readonly sprache: string;
   readonly aktiv: boolean;
   readonly themenspezifisch: boolean;
+  readonly zugangsweg?: string | null;
 }
+
+/** Was in der Adresszeile stehen soll, je Zugangsweg. */
+const ADRESS_BEISPIEL: Record<Zugangsweg, string> = {
+  automatisch: "https://beispiel.de/feed/",
+  feed: "https://beispiel.de/feed/",
+  web: "https://beispiel.de/status",
+  suche: "https://search.n0de.online/search?q=Suchfrage",
+  gdelt: "https://api.gdeltproject.org/api/v2/doc/doc?query=Suchfrage sourcelang:german",
+};
+
+/** Ein Satz zu jedem Zugangsweg. Ohne ihn ist die Auswahl nicht zu beantworten. */
+const ZUGANGSWEG_HINWEIS: Record<Zugangsweg, string> = {
+  automatisch:
+    "Feeds erkennt der Sammellauf an der Adresse (.rss, .xml, /feed …), alles andere liest er als einzelne Webseite.",
+  feed: "Erzwingt die Feed-Lesart, auch wenn die Adresse nicht danach aussieht.",
+  web: "Erzwingt die Webseiten-Lesart, auch wenn die Adresse nach Feed aussieht.",
+  suche:
+    "Fragt bei jedem Lauf deine SearXNG-Instanz ab. Die Suchfrage gehört in den Parameter q der Adresse. So kommen Foren und Blogs herein, die keinen Feed haben.",
+  gdelt:
+    "Durchsucht weltweit Nachrichtenseiten, kostenlos und ohne Schlüssel. Liefert zu jedem Treffer den Zeitpunkt der ersten Sichtung — hilfreich für die Frage, wer zuerst berichtet hat.",
+};
 
 const TYPEN = [
   ["hersteller_offiziell", "Hersteller (offiziell)"],
@@ -34,6 +64,19 @@ const TYPEN = [
   ["sonstige", "Sonstiges"],
 ] as const;
 
+/** Was in der Spalte ZUGANGSWEG steht — der gespeicherte Wert allein sagt zu wenig. */
+function zugangswegText(q: QuelleZeile): string {
+  if (q.typ === "extern_agent") return "eingeliefert";
+  const weg = istZugangsweg(q.zugangsweg) ? q.zugangsweg : ZUGANGSWEG_VORGABE;
+  if (weg === "automatisch") {
+    // Bei "automatisch" ist die Angabe erst nützlich, wenn sie das Ergebnis
+    // nennt: Man will wissen, was tatsächlich passiert, nicht wie entschieden
+    // wurde.
+    return istFeedAdresse(q.url) ? "Feed (erkannt)" : "Webseite (erkannt)";
+  }
+  return ZUGANGSWEG_TEXT[weg];
+}
+
 export function QuellenVerwaltung({
   auftragId,
   quellen,
@@ -45,6 +88,7 @@ export function QuellenVerwaltung({
   const [url, setUrl] = useState("");
   const [herausgeber, setHerausgeber] = useState("");
   const [typ, setTyp] = useState<string>("fachmedium");
+  const [zugangsweg, setZugangsweg] = useState<Zugangsweg>(ZUGANGSWEG_VORGABE);
   const [sprache, setSprache] = useState("de");
   const [themenspezifisch, setThemenspezifisch] = useState(false);
   const [laeuft, setLaeuft] = useState(false);
@@ -63,11 +107,13 @@ export function QuellenVerwaltung({
         herausgeber: herausgeber.trim(),
         sprache,
         themenspezifisch,
+        zugangsweg,
       });
       if (error) throw new Error(error.message);
       setUrl("");
       setHerausgeber("");
       setThemenspezifisch(false);
+      setZugangsweg(ZUGANGSWEG_VORGABE);
       setMeldung({ gut: true, text: "Quelle hinzugefügt." });
       router.refresh();
     } catch (f) {
@@ -133,13 +179,7 @@ export function QuellenVerwaltung({
                   <td>{q.herausgeber}</td>
                   <td className="aus" style={{ maxWidth: 260, overflowWrap: "anywhere" }}>{q.url}</td>
                   <td className="aus">{q.typ}</td>
-                  <td className="aus">
-                    {q.typ === "extern_agent"
-                      ? "eingeliefert"
-                      : istFeedAdresse(q.url)
-                        ? "Feed"
-                        : "Webseite"}
-                  </td>
+                  <td className="aus">{zugangswegText(q)}</td>
                   <td>
                     <button
                       type="button"
@@ -181,17 +221,40 @@ export function QuellenVerwaltung({
 
       <form onSubmit={hinzufuegen} className="formular" style={{ maxWidth: 640, marginTop: 20 }}>
         <label className="feld">
+          <span>Zugangsweg</span>
+          <select
+            value={zugangsweg}
+            onChange={(e) => setZugangsweg(e.target.value as Zugangsweg)}
+          >
+            {ZUGANGSWEGE.map((wert) => (
+              <option key={wert} value={wert}>{ZUGANGSWEG_TEXT[wert]}</option>
+            ))}
+          </select>
+          <small>{ZUGANGSWEG_HINWEIS[zugangsweg]}</small>
+        </label>
+
+        <label className="feld">
           <span>Adresse der Quelle</span>
           <input required type="url" value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://beispiel.de/feed/" />
+            placeholder={ADRESS_BEISPIEL[zugangsweg]} />
           <small>
-            {url
-              ? istFeedAdresse(url)
-                ? "Wird als Feed gelesen."
-                : "Wird als einzelne Webseite gelesen."
-              : "Feeds erkennt der Sammellauf an der Adresse (.rss, .xml, /feed …)."}
+            {zugangsweg !== "automatisch"
+              ? `Beispiel: ${ADRESS_BEISPIEL[zugangsweg]}`
+              : url
+                ? istFeedAdresse(url)
+                  ? "Wird als Feed gelesen."
+                  : "Wird als einzelne Webseite gelesen."
+                : ZUGANGSWEG_HINWEIS.automatisch}
           </small>
         </label>
+
+        {(zugangsweg === "suche" || zugangsweg === "gdelt") && !/[?&](q|query)=[^&]/.test(url) && url !== "" && (
+          <p className="meldung meldung-schlecht" style={{ marginTop: -8 }}>
+            In der Adresse fehlt die Suchfrage
+            {zugangsweg === "suche" ? " (Parameter q)" : " (Parameter query)"} — der
+            Abruf würde bei jedem Lauf mit einem Fehler enden.
+          </p>
+        )}
 
         <label className="feld">
           <span>Herausgeber</span>

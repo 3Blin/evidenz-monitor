@@ -55,6 +55,13 @@ CREATE TABLE quellen (
   -- Quelle ist durch ihre Adresse schon auf das Thema begrenzt (ADR 0008,
   -- nachgetragen in Migration 0003); Pflichtbegriffe gelten dann als erfüllt.
   themenspezifisch BOOLEAN NOT NULL DEFAULT false,
+  -- Wie gelesen wird (ADR 0014, nachgetragen in Migration 0008). 'automatisch'
+  -- heißt: an der Adresse erkennen (Feed oder Webseite) - das bisherige
+  -- Verhalten. Die übrigen Werte sind für Wege, die man einer Adresse nicht
+  -- ansieht. Bewusst getrennt von `typ`: der sagt, WER veröffentlicht, und
+  -- davon hängt die Reifegrad-Einstufung ab.
+  zugangsweg    TEXT NOT NULL DEFAULT 'automatisch'
+    CHECK (zugangsweg IN ('automatisch','feed','web','suche','gdelt')),
   UNIQUE (auftrag_id, url)
 );
 

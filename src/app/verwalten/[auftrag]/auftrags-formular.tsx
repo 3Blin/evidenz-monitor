@@ -23,6 +23,7 @@ import { begriffslisteAusEingabe } from "@/lib/relevanz";
 import {
   GROESSTER_TAKT_MINUTEN, KLEINSTER_TAKT_MINUTEN, pruefeBereich, taktInWorten,
 } from "@/lib/taktung";
+import { triage, BETRIEBSART_TEXT } from "@/lib/triage";
 
 export interface AuftragVollstaendig {
   readonly id: string;
@@ -73,6 +74,14 @@ export function AuftragsFormular({ auftrag }: { auftrag: AuftragVollstaendig }) 
   const [kiBegruendung, setKiBegruendung] = useState<string | null>(null);
   const [kiQuellen, setKiQuellen] = useState<readonly Quellenvorschlag[]>([]);
   const [kiFehler, setKiFehler] = useState<string | null>(null);
+
+  // Die Triage rechnet bei jeder Änderung an der Frage mit - sie ist reine
+  // Textauswertung ohne Netzzugriff. Der Vorschlag wird nur angezeigt, nie
+  // von selbst übernommen: Was das System abruft, entscheidet die Nutzerin.
+  const befund = triage(frage, ziel);
+  const taktPasstNicht =
+    Number.parseInt(taktMin, 10) !== befund.taktMinMinuten ||
+    Number.parseInt(taktMax, 10) !== befund.taktMaxMinuten;
 
   async function vorschlagHolen() {
     setKiLaeuft(true);
@@ -312,6 +321,29 @@ export function AuftragsFormular({ auftrag }: { auftrag: AuftragVollstaendig }) 
             Obergrenze. So bekommt ein schnelllebiges Thema von selbst mehr
             Aufmerksamkeit als ein ruhiges — ohne dass du nachstellen musst.
           </p>
+
+          <div className="hinweis-kasten">
+            <p>
+              <strong>Erkannt: {BETRIEBSART_TEXT[befund.betriebsart]}.</strong>{" "}
+              {befund.begruendung}
+            </p>
+            <p className="feld-hinweis">{befund.hinweis}</p>
+            {taktPasstNicht ? (
+              <button
+                type="button"
+                className="knopf knopf-leise knopf-klein"
+                onClick={() => {
+                  setTaktMin(String(befund.taktMinMinuten));
+                  setTaktMax(String(befund.taktMaxMinuten));
+                }}
+              >
+                Vorschlag übernehmen: {taktInWorten(befund.taktMinMinuten)} bis{" "}
+                {taktInWorten(befund.taktMaxMinuten)}
+              </button>
+            ) : (
+              <p className="feld-hinweis">Der eingestellte Bereich passt dazu.</p>
+            )}
+          </div>
           <div className="feld-paar">
             <label className="feld">
               <span>Mindestens alle … Minuten</span>

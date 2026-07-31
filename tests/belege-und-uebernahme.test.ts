@@ -57,8 +57,8 @@ beforeAll(async () => {
   privaterAuftrag = privat.rows[0]!.id;
 
   const quelle = await db.query<{ id: string }>(
-    `INSERT INTO quellen (auftrag_id,url,typ,herausgeber,themenspezifisch)
-     VALUES ($1,'https://test.example/feed','fachmedium','Belegblatt',true) RETURNING id`,
+    `INSERT INTO quellen (auftrag_id,url,typ,herausgeber,themenspezifisch,zugangsweg)
+     VALUES ($1,'https://test.example/feed','fachmedium','Belegblatt',true,'suche') RETURNING id`,
     [demoAuftrag],
   );
   const quelleId = quelle.rows[0]!.id;
@@ -187,12 +187,18 @@ describe("auftrag_uebernehmen", () => {
     // eigene Entscheidung des neuen Besitzers.
     expect(kopie[0]?.oeffentliche_demo).toBe(false);
 
-    const { rows: quellen } = await db.query<{ url: string; themenspezifisch: boolean }>(
-      "SELECT url,themenspezifisch FROM quellen WHERE auftrag_id=$1",
+    const { rows: quellen } = await db.query<{
+      url: string; themenspezifisch: boolean; zugangsweg: string;
+    }>(
+      "SELECT url,themenspezifisch,zugangsweg FROM quellen WHERE auftrag_id=$1",
       [neu],
     );
     expect(quellen).toHaveLength(1);
     expect(quellen[0]?.themenspezifisch).toBe(true);
+    // Ohne diesen Wert fiele die Kopie auf 'automatisch' zurück: Eine
+    // Suchquelle würde dann als Webseite gelesen und lieferte die
+    // HTML-Seite der Suchmaschine statt der Treffer (Migration 0008).
+    expect(quellen[0]?.zugangsweg).toBe("suche");
   });
 
   it("übernimmt keine fremden Inhalte und Aussagen", async () => {

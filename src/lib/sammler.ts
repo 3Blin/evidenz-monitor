@@ -15,6 +15,8 @@ export interface QuelleZeile {
   readonly url: string;
   readonly typ: string;
   readonly herausgeber: string;
+  /** Wie gelesen wird (Migration 0008). Fehlt der Wert, gilt 'automatisch'. */
+  readonly zugangsweg?: string | null;
 }
 
 export interface AbrufErgebnis {
@@ -78,7 +80,7 @@ export async function sammleAuftrag(
   correlationId: string,
 ): Promise<readonly AbrufErgebnis[]> {
   const { rows } = await db.query<QuelleZeile>(
-    `SELECT id, url, typ, herausgeber FROM quellen
+    `SELECT id, url, typ, herausgeber, zugangsweg FROM quellen
       WHERE auftrag_id=$1 AND aktiv=true AND typ <> 'extern_agent'`,
     [auftragId],
   );

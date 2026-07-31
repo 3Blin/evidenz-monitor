@@ -7,8 +7,8 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  alsViewBox, ordneAn, passendeAnsicht, radius, verschobeneAnsicht,
-  zusammenhangskomponenten, type NetzKante, type NetzKnoten,
+  alsViewBox, gruppenNummern, kantenMitte, kantenPfad, OHNE_GRUPPE, ordneAn, passendeAnsicht,
+  radius, verschobeneAnsicht, zusammenhangskomponenten, type NetzKante, type NetzKnoten,
 } from "../src/lib/netz-layout";
 
 function knoten(id: string, gewicht = 5): NetzKnoten {
@@ -135,5 +135,224 @@ describe("radius", () => {
 describe("alsViewBox", () => {
   it("schreibt vier Zahlen in der erwarteten Reihenfolge", () => {
     expect(alsViewBox({ x: -10.55, y: 2, breite: 100, hoehe: 50 })).toBe("-10.6 2.0 100.0 50.0");
+  });
+});
+
+describe("Gruppennummern für die Einfärbung (ADR 0016)", () => {
+  const k = (id: string): NetzKnoten => ({
+    id, label: id.toUpperCase(), quellentyp: "fachmedium", gewicht: 3, offiziell: false,
+  });
+
+  it("gibt verbundenen Knoten dieselbe Nummer", () => {
+    const nummern = gruppenNummern(
+      [k("a"), k("b"), k("c")],
+      [{ von: "a", nach: "b", art: "uebernahme" }],
+    );
+    expect(nummern.get("a")).toBe(nummern.get("b"));
+    expect(nummern.get("c")).not.toBe(nummern.get("a"));
+  });
+
+  it("gibt einem Knoten ohne Verbindung KEINE eigene Gruppe", () => {
+    // Er bildet keine Gruppe, er steht allein. Vier Einzelgaenger in vier
+    // Farben saehen aus wie vier Befunde, obwohl es keiner ist - und sie
+    // uebertoenten die eine Gruppe, um die es geht.
+    const nummern = gruppenNummern(
+      [k("a"), k("b"), k("allein1"), k("allein2")],
+      [{ von: "a", nach: "b", art: "uebernahme" }],
+    );
+    expect(nummern.get("allein1")).toBe(OHNE_GRUPPE);
+    expect(nummern.get("allein2")).toBe(OHNE_GRUPPE);
+    expect(nummern.get("a")).toBe(0);
+  });
+
+  it("nummeriert Gruppen luecklos, auch wenn Einzelne dazwischenliegen", () => {
+    // Ohne eigenen Zaehler wuerde eine Gruppe hinter mehreren Einzelnen eine
+    // hohe Nummer bekommen und im Farbkreis wieder bei vorn landen.
+    const nummern = gruppenNummern(
+      [k("a"), k("b"), k("allein"), k("c"), k("d")],
+      [
+        { von: "a", nach: "b", art: "uebernahme" },
+        { von: "c", nach: "d", art: "uebernahme" },
+      ],
+    );
+    expect([nummern.get("a"), nummern.get("c")].sort()).toEqual([0, 1]);
+  });
+
+  it("nummeriert die größte Gruppe als erste", () => {
+    // Die erste Farbe ist die auffälligste; sie gehört an das dichteste
+    // Geflecht.
+    const nummern = gruppenNummern(
+      [k("x"), k("y"), k("a"), k("b"), k("c")],
+      [
+        { von: "a", nach: "b", art: "uebernahme" },
+        { von: "b", nach: "c", art: "uebernahme" },
+        { von: "x", nach: "y", art: "uebernahme" },
+      ],
+    );
+    expect(nummern.get("a")).toBe(0);
+    expect(nummern.get("x")).toBe(1);
+  });
+
+  it("vergibt bei gleicher Größe stabile Nummern", () => {
+    // Ohne feste Reihenfolge wechselten die Farben bei jedem Laden der Seite.
+    const knoten = [k("y"), k("x"), k("b"), k("a")];
+    const kanten = [
+      { von: "x", nach: "y", art: "uebernahme" },
+      { von: "a", nach: "b", art: "uebernahme" },
+    ];
+    const einmal = gruppenNummern(knoten, kanten);
+    const nochmal = gruppenNummern([...knoten].reverse(), kanten);
+    expect(einmal.get("x")).toBe(nochmal.get("x"));
+    expect(einmal.get("a")).toBe(nochmal.get("a"));
+  });
+
+  it("verträgt ein leeres Netz", () => {
+    expect(gruppenNummern([], []).size).toBe(0);
+  });
+});
+
+describe("Gebogene Kanten", () => {
+  it("beginnt und endet an den Knotenmitten", () => {
+    const pfad = kantenPfad(0, 0, 100, 0);
+    expect(pfad.startsWith("M 0.0 0.0")).toBe(true);
+    expect(pfad.endsWith("100.0 0.0")).toBe(true);
+  });
+
+  it("weicht seitlich aus, damit sich Kanten nicht überdecken", () => {
+    const mitte = kantenMitte(0, 0, 100, 0);
+    expect(mitte.x).toBeCloseTo(50, 1);
+    expect(Math.abs(mitte.y)).toBeGreaterThan(2);
+  });
+
+  it("kommt mit zwei gleichen Punkten zurecht, statt durch Null zu teilen", () => {
+    expect(Number.isNaN(kantenMitte(5, 5, 5, 5).x)).toBe(false);
+    expect(kantenPfad(5, 5, 5, 5)).toContain("M 5.0 5.0");
+  });
+});
+
+describe("Dichte der Anordnung (ADR 0016)", () => {
+  it("hält verbundene Quellen enger zusammen als der Ring der Unverbundenen", () => {
+    // Der Fall, an dem es sich zeigte: eine Zweiergruppe. Ihre Mitglieder
+    // liegen einander gegenüber, ihr Abstand ist also der Durchmesser des
+    // Gruppenkreises. War dessen Untergrenze fest, wurde er größer als der
+    // Ring darum - und das Bild sagte das Gegenteil dessen, was gemeint war.
+    for (const menge of [1, 2, 3, 5, 9]) {
+      const k = [
+        knoten("a"), knoten("b"),
+        ...Array.from({ length: menge }, (_, i) => knoten(`allein${i}`)),
+      ];
+      const p = ordneAn(k, [{ von: "a", nach: "b", art: "uebernahme" }]);
+      const a = p.find((x) => x.id === "a");
+      const b = p.find((x) => x.id === "b");
+      if (!a || !b) throw new Error("Knoten fehlt");
+      const innen = Math.hypot(a.x - b.x, a.y - b.y);
+      for (const einzeln of p.filter((x) => x.id.startsWith("allein"))) {
+        expect(
+          Math.hypot(a.x - einzeln.x, a.y - einzeln.y),
+          `${menge} Unverbundene`,
+        ).toBeGreaterThan(innen);
+      }
+    }
+  });
+
+  it("legt sich quer, weil die Karte quer ist", () => {
+    // Ein kreisrundes Bild in einer Karte im Verhaeltnis 3:2 laesst links und
+    // rechts je ein Viertel leer. Schlimmer noch: Bei zwei Elementen auf einem
+    // Ring standen diese uebereinander, und das Bild wurde eine schmale Saeule
+    // in einer weiten Karte. Genau dieser Zuschnitt kam im Betrieb vor.
+    const faelle: readonly (readonly [string, readonly NetzKante[]])[] = [
+      ["zwei Einzelne, zwei Gruppen", [
+        { von: "0", nach: "1", art: "uebernahme" },
+        { von: "2", nach: "3", art: "uebernahme" },
+      ]],
+      ["eine Dreiergruppe", [
+        { von: "0", nach: "1", art: "uebernahme" },
+        { von: "1", nach: "2", art: "uebernahme" },
+      ]],
+      ["gar keine Verknuepfung", []],
+    ];
+    for (const [name, kanten] of faelle) {
+      const k = Array.from({ length: 7 }, (_, i) => knoten(String(i), 30));
+      const a = passendeAnsicht(ordneAn(k, kanten, 1.7));
+      expect(a.breite / a.hoehe, name).toBeGreaterThan(1);
+    }
+  });
+
+  it("legt sich hochkant, wenn die Fläche hochkant ist", () => {
+    // Am Telefon ist die Karte höher als breit. Ein waagerecht gedehntes Bild
+    // passte dort nur, indem es klein wird - und genau das war die erste
+    // Rückmeldung ("am Handy sehe ich einen").
+    for (const kanten of [
+      [] as readonly NetzKante[],
+      [{ von: "0", nach: "1", art: "uebernahme" }] as readonly NetzKante[],
+    ]) {
+      const k = Array.from({ length: 7 }, (_, i) => knoten(String(i), 30));
+      const a = passendeAnsicht(ordneAn(k, kanten, 0.8));
+      expect(a.breite / a.hoehe).toBeLessThan(1);
+    }
+  });
+
+  it("lässt Knoten auch nach dem Dehnen einander nicht überdecken", () => {
+    // Gedehnt wird nur die längere Achse, nie die kürzere gestaucht - sonst
+    // rückten Knoten zusammen und könnten sich überlagern.
+    for (const verhaeltnis of [0.4, 0.8, 1, 1.7, 3, 12]) {
+      const k = Array.from({ length: 9 }, (_, i) => knoten(String(i), 40));
+      const platziert = ordneAn(k, [{ von: "0", nach: "1", art: "uebernahme" }], verhaeltnis);
+      for (const a of platziert) {
+        for (const b of platziert) {
+          if (a.id === b.id) continue;
+          expect(
+            Math.hypot(a.x - b.x, a.y - b.y),
+            `${verhaeltnis}: ${a.id}/${b.id}`,
+          ).toBeGreaterThan(a.radius + b.radius);
+        }
+      }
+    }
+  });
+
+  it("verträgt ein unbrauchbares Seitenverhältnis", () => {
+    const k = [knoten("a"), knoten("b")];
+    for (const kaputt of [0, -1, Number.NaN]) {
+      expect(ordneAn(k, [], kaputt).every((p) => Number.isFinite(p.x))).toBe(true);
+    }
+  });
+});
+
+describe("Ausschnitt an die Zeichenfläche angleichen (ADR 0016)", () => {
+  const k = [knoten("a", 10), knoten("b", 10), knoten("c", 10)];
+
+  it("trifft das gewünschte Seitenverhältnis", () => {
+    for (const ziel of [0.6, 1, 1.9, 3]) {
+      const a = passendeAnsicht(ordneAn(k, []), undefined, ziel);
+      expect(a.breite / a.hoehe, `Ziel ${ziel}`).toBeCloseTo(ziel, 5);
+    }
+  });
+
+  it("weitet nur, beschneidet nie", () => {
+    // Sonst verschwaenden Knoten am Rand - genau der Mangel, den diese
+    // Funktion beheben soll.
+    const platziert = ordneAn(k, []);
+    const ohne = passendeAnsicht(platziert);
+    for (const ziel of [0.5, 1.2, 4]) {
+      const mit = passendeAnsicht(platziert, undefined, ziel);
+      expect(mit.breite, `Ziel ${ziel}`).toBeGreaterThanOrEqual(ohne.breite - 0.001);
+      expect(mit.hoehe, `Ziel ${ziel}`).toBeGreaterThanOrEqual(ohne.hoehe - 0.001);
+      expect(mit.x).toBeLessThanOrEqual(ohne.x + 0.001);
+      expect(mit.y).toBeLessThanOrEqual(ohne.y + 0.001);
+    }
+  });
+
+  it("behält die Mitte", () => {
+    const ohne = passendeAnsicht(ordneAn(k, []));
+    const mit = passendeAnsicht(ordneAn(k, []), undefined, 3);
+    expect(mit.x + mit.breite / 2).toBeCloseTo(ohne.x + ohne.breite / 2, 5);
+    expect(mit.y + mit.hoehe / 2).toBeCloseTo(ohne.y + ohne.hoehe / 2, 5);
+  });
+
+  it("übergeht unbrauchbare Angaben, statt daran zu zerbrechen", () => {
+    for (const kaputt of [0, -2, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const a = passendeAnsicht(ordneAn(k, []), undefined, kaputt);
+      expect(Number.isFinite(a.breite) && a.breite > 0, String(kaputt)).toBe(true);
+    }
   });
 });

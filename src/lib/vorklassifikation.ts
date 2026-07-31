@@ -13,8 +13,12 @@ import { gemeinsameKennungen, kennungen, nachweislichVerschieden } from "./kennu
 import { gemeinsameVerweise, verweise } from "./verweise";
 
 /**
- * Wie weit zwei Beiträge zeitlich auseinanderliegen dürfen, um allein wegen
- * ähnlicher Titel als dieselbe Meldung zu gelten.
+ * Vorgabe dafür, wie weit zwei Beiträge zeitlich auseinanderliegen dürfen, um
+ * allein wegen ähnlicher Titel als dieselbe Meldung zu gelten.
+ *
+ * Seit ADR 0015 ist das nur noch die Vorgabe: Die Triage der Fragestellung
+ * bestimmt den tatsächlichen Wert je Auftrag. Eine rückblickende Frage
+ * ("Wurde damals gewarnt?") braucht Jahre, eine frische Behauptung Tage.
  *
  * Grund: Wiederkehrende Vorgänge tragen wiederkehrende Titel. Ein monatlicher
  * Patchtag, ein jährlicher Bericht, eine regelmäßige Preisrunde - ohne
@@ -141,6 +145,7 @@ export interface Gruppenbefund {
  */
 export function gruppiereMitBegruendung(
   inhalte: readonly VorInhalt[],
+  zeitfensterTage: number = ZEITFENSTER_TAGE,
 ): readonly Gruppenbefund[] {
   interface Mitglied {
     readonly inhalt: VorInhalt;
@@ -166,7 +171,7 @@ export function gruppiereMitBegruendung(
     let besteBegruendung = "";
 
     for (const gruppe of gruppen) {
-      const befund = passtZurGruppe(neuling, gruppe.mitglieder);
+      const befund = passtZurGruppe(neuling, gruppe.mitglieder, zeitfensterTage);
       if (!befund) continue;
       if (befund.wert > besterWert) {
         beste = gruppe;
@@ -211,6 +216,7 @@ function passtZurGruppe(
   mitglieder: readonly {
     readonly inhalt: VorInhalt; readonly kennungen: readonly string[]; readonly verweise: readonly string[];
   }[],
+  zeitfensterTage: number,
 ): Passung | null {
   let beste: Passung | null = null;
 
@@ -239,7 +245,8 @@ function passtZurGruppe(
     }
 
     // 4. Titelähnlichkeit - nur innerhalb des Zeitfensters.
-    if (!imZeitfenster(neuling.inhalt.veroeffentlichtAm, mitglied.inhalt.veroeffentlichtAm)) continue;
+    if (!imZeitfenster(neuling.inhalt.veroeffentlichtAm, mitglied.inhalt.veroeffentlichtAm, zeitfensterTage))
+      continue;
     const wert = titelAehnlichkeit(mitglied.inhalt.titel, neuling.inhalt.titel);
     if (wert >= AEHNLICHKEITS_SCHWELLE && wert > (beste?.wert ?? 0)) {
       beste = { wert, begruendung: `Titelähnlichkeit ${wert.toFixed(2)}` };
@@ -250,13 +257,16 @@ function passtZurGruppe(
 }
 
 /** Liegen zwei Zeitpunkte nah genug beieinander? Unbekannt gilt als nah. */
-function imZeitfenster(a: Date | null, b: Date | null): boolean {
+function imZeitfenster(a: Date | null, b: Date | null, zeitfensterTage: number): boolean {
   if (!a || !b) return true;
   const tage = Math.abs(a.getTime() - b.getTime()) / 86_400_000;
-  return tage <= ZEITFENSTER_TAGE;
+  return tage <= zeitfensterTage;
 }
 
 /** Gruppiert Beiträge, die dieselbe Meldung behandeln (ohne Begründung). */
-export function gruppiere(inhalte: readonly VorInhalt[]): readonly (readonly VorInhalt[])[] {
-  return gruppiereMitBegruendung(inhalte).map((g) => g.inhalte);
+export function gruppiere(
+  inhalte: readonly VorInhalt[],
+  zeitfensterTage: number = ZEITFENSTER_TAGE,
+): readonly (readonly VorInhalt[])[] {
+  return gruppiereMitBegruendung(inhalte, zeitfensterTage).map((g) => g.inhalte);
 }
