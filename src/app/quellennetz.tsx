@@ -19,6 +19,12 @@
  *   was nicht mit ihm verbunden ist. Das beantwortet die eigentliche Frage
  *   ("wer bestätigt wen?") in einer Bewegung.
  *
+ * Fassung 4 nach einem zweiten Vorbild (ADR 0017): Der Name steht in einem
+ * gerahmten Feld unter dem Knoten statt als nackter Text, die Linien sind
+ * dünner und zurückhaltender, und Widerspruch ist rot. Das gerahmte Feld ist
+ * nicht nur Zierde - auf einem Raster im Hintergrund ist freistehender Text
+ * schwer zu lesen, und am Telefon ist genau das der Unterschied.
+ *
  * Was ausdrücklich NICHT geändert wurde: die Anordnung. Sie bleibt
  * deterministisch (netz-layout.ts) - gleiche Daten, gleiches Bild. Eine
  * Kräftesimulation sähe lebendiger aus, aber ein Netz, das bei jedem Laden
@@ -26,8 +32,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  alsViewBox, gruppenNummern, kantenMitte, kantenPfad, OHNE_GRUPPE, ordneAn,
-  passendeAnsicht, verschobeneAnsicht, type NetzKante, type NetzKnoten,
+  alsViewBox, feldBreite, felderPassen, gekuerzt, gruppenNummern, kantenMitte, kantenPfad,
+  OHNE_GRUPPE, ordneAn, passendeAnsicht, verschobeneAnsicht, type NetzKante, type NetzKnoten,
 } from "@/lib/netz-layout";
 
 /** Einfärbung nach Art der Quelle - die Bedeutung aus dem Reifegrad. */
@@ -56,6 +62,15 @@ const GRUPPEN_FARBEN = [
  * eine Gruppe, um die es geht.
  */
 const OHNE_GRUPPE_FARBE = "#55637A";
+
+/**
+ * Widerspruch ist rot, alles andere trägt die Farbe seiner Gruppe.
+ *
+ * Der einzige Fall, in dem eine Kante etwas anderes bedeutet als "dieselbe
+ * Meldung": Hier sagt eine Quelle das Gegenteil der anderen. Das in derselben
+ * Farbe zu zeichnen wie eine Bestätigung wäre irreführend.
+ */
+const WIDERSPRUCH_FARBE = "#F0616D";
 
 const BEZIEHUNG_NAME: Record<string, string> = {
   uebernahme: "Übernahme",
@@ -96,15 +111,16 @@ export function Quellennetz({
    * der Karte auf einem gewöhnlichen Bildschirm, damit vor der ersten Messung
    * nichts springt.
    */
-  const [verhaeltnis, setVerhaeltnis] = useState(1.7);
+  const [flaechenGroesse, setFlaechenGroesse] = useState({ breite: 900, hoehe: 530 });
+  const verhaeltnis = flaechenGroesse.breite / Math.max(1, flaechenGroesse.hoehe);
 
   useEffect(() => {
     const el = flaeche.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const beobachter = new ResizeObserver(([eintrag]) => {
       const kasten = eintrag?.contentRect;
-      if (!kasten || kasten.height <= 0) return;
-      setVerhaeltnis(kasten.width / kasten.height);
+      if (!kasten || kasten.height <= 0 || kasten.width <= 0) return;
+      setFlaechenGroesse({ breite: kasten.width, hoehe: kasten.height });
     });
     beobachter.observe(el);
     return () => beobachter.disconnect();
@@ -119,6 +135,16 @@ export function Quellennetz({
     [platziert, verhaeltnis],
   );
   const ansicht = verschobeneAnsicht(grundAnsicht, vergroesserung, versatz.x, versatz.y);
+
+  /**
+   * Wie viele Zeichnungseinheiten auf einen Bildschirmpunkt kommen.
+   *
+   * Schrift in einer SVG-Zeichnung wird mit dem Ausschnitt mitskaliert. Eine
+   * feste Größe in Zeichnungseinheiten heißt deshalb: am großen Bildschirm
+   * lesbar, am Telefon winzig - und beim Hineinzoomen riesig. Multipliziert man
+   * sie mit diesem Maßstab, bleibt sie auf dem Bildschirm überall gleich groß.
+   */
+  const skala = ansicht.breite / Math.max(1, flaechenGroesse.breite);
   const gruppen = useMemo(() => gruppenNummern(knoten, kanten), [knoten, kanten]);
 
   const nachId = useMemo(() => new Map(platziert.map((p) => [p.id, p])), [platziert]);
@@ -169,8 +195,7 @@ export function Quellennetz({
 
   /** Ein Bildschirmpunkt entspricht so vielen Einheiten der Zeichnung. */
   function massstab(): number {
-    const breitePx = flaeche.current?.clientWidth ?? 800;
-    return ansicht.breite / Math.max(1, breitePx);
+    return skala;
   }
 
   function beiZeigerAb(e: React.PointerEvent<SVGSVGElement>) {
@@ -207,12 +232,24 @@ export function Quellennetz({
   }
 
   const leer = knoten.length === 0;
-  // Namen an jedem Knoten werden ab einer gewissen Menge zur Textwand. Dann
-  // nur noch beim Zeigen - die Zahl im Knoten bleibt ohnehin immer sichtbar.
-  const namenImmer = platziert.length <= 14;
+  /**
+   * Namen an jedem Knoten oder nur am berührten?
+   *
+   * Zwei Gründe, sie zurückzuhalten: zu viele Knoten (Textwand) oder zu wenig
+   * Platz nebeneinander (die Felder überdecken sich). Der zweite Fall wird
+   * gerechnet und nicht an einer geratenen Bildschirmbreite festgemacht - am
+   * Telefon ist genau das der Unterschied zwischen lesbar und Balkensalat.
+   * Die Zahl im Knoten bleibt ohnehin immer sichtbar.
+   */
+  const namenImmer = platziert.length <= 14 && felderPassen(platziert, skala);
 
   return (
     <section className="karte netz">
+      {/* Überschrift und Bedienung in einer Zeile, die umbrechen darf. Vorher
+          lagen beide frei über der Zeichnung - bei mittleren Breiten schob sich
+          die Bedienung dann über den Text. Im normalen Fluss kann das nicht
+          passieren, bei keiner Bildschirmbreite. */}
+      <div className="netz-leiste">
       <div className="karten-kopf eyebrow">
         QUELLENNETZ · GRÖSSE = BEITRÄGE · LINIE = GEMEINSAME MELDUNG
       </div>
@@ -231,6 +268,7 @@ export function Quellennetz({
         <button type="button" className="netz-knopf netz-knopf-breit" onClick={zuruecksetzen}>
           Zurücksetzen
         </button>
+      </div>
       </div>
 
       {leer ? (
@@ -272,17 +310,23 @@ export function Quellennetz({
             const deutlich = kantenStaerke(kante, a.label, b.label);
             // Die Kante trägt die Farbe ihrer Gruppe - dieselbe wie ihre
             // beiden Enden, weil eine Kante immer innerhalb einer Gruppe liegt.
-            const strich = faerbung === "gruppen" ? farbe(a) : "#3D6DF7";
-            const zeigeNamen =
-              deutlich === 1 && (beruehrt !== null || hervorgehoben !== null);
+            const strich =
+              kante.art === "widerspruch"
+                ? WIDERSPRUCH_FARBE
+                : faerbung === "gruppen"
+                  ? farbe(a)
+                  : "#3D6DF7";
+            const imBlickKante = beruehrt !== null || hervorgehoben !== null;
+            const zeigeNamen = deutlich === 1 && imBlickKante;
             const mitte = kantenMitte(a.x, a.y, b.x, b.y);
             return (
               <g key={`${kante.von}-${kante.nach}-${idx}`} opacity={deutlich}>
                 <path d={kantenPfad(a.x, a.y, b.x, b.y)} fill="none" stroke={strich}
-                      strokeWidth={deutlich === 1 ? 2 : 1.2} strokeOpacity={0.55}
+                      strokeWidth={(deutlich === 1 ? 1.4 : 1) * skala} strokeOpacity={imBlickKante ? 0.75 : 0.4}
                       strokeLinecap="round" />
                 {zeigeNamen && (
-                  <text x={mitte.x} y={mitte.y - 6} textAnchor="middle" className="kanten-name">
+                  <text x={mitte.x} y={mitte.y - 6 * skala} textAnchor="middle"
+                        className="kanten-name" fontSize={10 * skala}>
                     {BEZIEHUNG_NAME[kante.art] ?? kante.art}
                   </text>
                 )}
@@ -308,22 +352,37 @@ export function Quellennetz({
                     Stelle kommt, ist zu wichtig, um es hinter einer
                     Farbeinstellung zu verstecken. */}
                 {p.offiziell && (
-                  <circle cx={p.x} cy={p.y} r={p.radius + 7} fill="none" stroke="#4ADE80"
-                          strokeWidth={1.2} strokeOpacity={imBlick ? 0.7 : 0.3} />
+                  <circle cx={p.x} cy={p.y} r={p.radius + 7 * skala} fill="none" stroke="#4ADE80"
+                          strokeWidth={1.2 * skala} strokeOpacity={imBlick ? 0.7 : 0.3} />
                 )}
                 <circle cx={p.x} cy={p.y} r={p.radius} fill={f}
                         fillOpacity={imBlick ? 0.92 : 0.75}
-                        stroke={f} strokeWidth={beruehrt === p.id ? 3 : 0}
+                        stroke={f} strokeWidth={beruehrt === p.id ? 3 * skala : 0}
                         strokeOpacity={0.45}
                         filter={imBlick ? "url(#netz-schein)" : undefined} />
-                <text x={p.x} y={p.y + 4} textAnchor="middle" className="knoten-zahl">
+                <text x={p.x} y={p.y + 4 * skala} textAnchor="middle" className="knoten-zahl"
+                      fontSize={12 * skala}>
                   {p.gewicht}
                 </text>
-                {(namenImmer || beruehrt === p.id) && (
-                  <text x={p.x} y={p.y + p.radius + 17} textAnchor="middle" className="knoten-name">
-                    {p.label}
-                  </text>
-                )}
+                {(namenImmer || beruehrt === p.id) && (() => {
+                  // Gerahmtes Feld statt freistehendem Text: Der Hintergrund
+                  // trägt ein Raster, auf dem heller Text schwer zu lesen ist.
+                  const name = gekuerzt(p.label);
+                  const breite = feldBreite(name) * skala;
+                  const hoehe = 20 * skala;
+                  const oben = p.y + p.radius + 10 * skala;
+                  return (
+                    <g className="knoten-feld">
+                      <rect x={p.x - breite / 2} y={oben} width={breite} height={hoehe}
+                            rx={6 * skala} fill="var(--flaeche-hell)" stroke={f}
+                            strokeOpacity={beruehrt === p.id ? 0.8 : 0.35} strokeWidth={skala} />
+                      <text x={p.x} y={oben + 14 * skala} textAnchor="middle" className="knoten-name"
+                            fontSize={11 * skala}>
+                        {name}
+                      </text>
+                    </g>
+                  );
+                })()}
               </g>
             );
           })}

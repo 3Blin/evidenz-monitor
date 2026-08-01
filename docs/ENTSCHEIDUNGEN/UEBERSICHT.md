@@ -103,3 +103,24 @@
   höchste Stufe. Dazu: Die Leiter zeigt jetzt die Verteilung, die Liste lässt
   sich sortieren, und „Zuerst: X · Datum" — die Kernfrage — steht ohne
   Aufklappen da.
+- **0017 Das Netz am Telefon:** Namen stehen jetzt in gerahmten Feldern (der
+  Hintergrund trägt ein Raster, auf dem freistehender Text schlecht lesbar ist),
+  Widerspruch ist rot, die Linien sind zurückhaltender. Der eigentliche Befund
+  kam aber vom Ausführen: Die Bausteine wurden gebündelt, in einem echten
+  Browser bei 414, 820 und 1440 Punkten Breite abgelichtet — und zeigten vier
+  Fehler, die beim Lesen des Codes keinem aufgefallen wären. Schrift skalierte
+  mit dem Ausschnitt statt mit dem Bildschirm (am Telefon winzig, beim Zoomen
+  riesig); die Felder überdeckten sich; die Prüfung, ob sie passen, verwarf
+  auch am großen Bildschirm alles; und bei mittleren Breiten schob sich die
+  Bedienung über die Überschrift. Grundsatz: Was von der Größe der Fläche
+  abhängt, wird gemessen oder gerechnet, nicht geraten.
+- **0018 Der Quellentyp ist keine Bestätigung:** Jeder Beitrag aus einer als
+  offiziell eingetragenen Quelle wurde als „offizielle Bestätigung" eingestuft
+  und hob die Aussage auf Stufe 6 — bewertet wurde also, WER veröffentlicht hat,
+  nicht WAS. Ein Dementi eines Herstellers wäre damit als Bestätigung
+  durchgegangen. An den echten Daten betraf das 52 von 104 Aussagen, also die
+  Hälfte, und keine davon war inhaltlich geprüft. Die Vorklassifikation vergibt
+  jetzt ausschließlich „stützt"; die Primärquelle steht in der Begründung als
+  Hinweis. Ohne KI-Analyse endet die Leiter bei Stufe 2 — ausnahmslos. Die
+  Merkform des Fehlers: Eine Eigenschaft der Quelle wurde für eine Eigenschaft
+  der Aussage gehalten.

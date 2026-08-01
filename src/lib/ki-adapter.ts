@@ -24,7 +24,9 @@
  * Praktische Folge des Fehlens: Die Frage "berichten zwei Herausgeber
  * unabhängig voneinander über dieselbe Sache?" ist ohne Sprachverständnis
  * nicht zu beantworten. Deshalb bleibt der Reifegrad ohne diesen Baustein bei
- * höchstens Stufe 2, sofern keine offizielle Primärquelle beteiligt ist.
+ * höchstens Stufe 2 - ausnahmslos (ADR 0018). Auch "bestätigt eine zuständige
+ * Stelle das?" ist eine inhaltliche Frage: Der Quellentyp sagt, wer spricht,
+ * nicht was gesagt wurde.
  * ---------------------------------------------------------------------------
  */
 import { z } from "zod";
