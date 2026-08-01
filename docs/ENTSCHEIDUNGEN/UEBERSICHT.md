@@ -114,3 +114,13 @@
   auch am großen Bildschirm alles; und bei mittleren Breiten schob sich die
   Bedienung über die Überschrift. Grundsatz: Was von der Größe der Fläche
   abhängt, wird gemessen oder gerechnet, nicht geraten.
+- **0018 Der Quellentyp ist keine Bestätigung:** Jeder Beitrag aus einer als
+  offiziell eingetragenen Quelle wurde als „offizielle Bestätigung" eingestuft
+  und hob die Aussage auf Stufe 6 — bewertet wurde also, WER veröffentlicht hat,
+  nicht WAS. Ein Dementi eines Herstellers wäre damit als Bestätigung
+  durchgegangen. An den echten Daten betraf das 52 von 104 Aussagen, also die
+  Hälfte, und keine davon war inhaltlich geprüft. Die Vorklassifikation vergibt
+  jetzt ausschließlich „stützt"; die Primärquelle steht in der Begründung als
+  Hinweis. Ohne KI-Analyse endet die Leiter bei Stufe 2 — ausnahmslos. Die
+  Merkform des Fehlers: Eine Eigenschaft der Quelle wurde für eine Eigenschaft
+  der Aussage gehalten.

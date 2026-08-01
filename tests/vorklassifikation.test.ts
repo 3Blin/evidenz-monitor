@@ -72,11 +72,46 @@ describe("Vorklassifikation", () => {
     expect(ermittleReifegrad(belege).stufe).toBe(2);
   });
 
-  it("markiert Herstellerquellen als offizielle Bestätigung", () => {
+  it("hält einen Beitrag einer Primärquelle NICHT für eine Bestätigung", () => {
+    // Der Quellentyp sagt, WER spricht, nicht WAS gesagt wurde. Die vorige
+    // Fassung stufte jeden Beitrag einer offiziellen Quelle als
+    // "offizielle_bestaetigung" ein - ein Dementi eines Herstellers wäre damit
+    // als Bestätigung durchgegangen und hätte die Aussage auf Stufe 6 gehoben.
     const b = klassifiziereGruppe([
       v({ titel: "Bekanntes Problem", herausgeber: "Microsoft", quellentyp: "hersteller_offiziell" }),
     ]);
-    expect(b[0]?.klassifikation).toBe("offizielle_bestaetigung");
+    expect(b[0]?.klassifikation).toBe("stuetzt");
+  });
+
+  it("nennt die Primärquelle aber in der Begründung", () => {
+    // Die Angabe geht nicht verloren - sie steht dort, wo sie hingehört: als
+    // Hinweis, nicht als Urteil.
+    const b = klassifiziereGruppe([
+      v({ titel: "Bekanntes Problem", herausgeber: "Microsoft", quellentyp: "hersteller_offiziell" }),
+    ]);
+    expect(b[0]?.begruendung).toContain("Primärquelle");
+    expect(b[0]?.begruendung).toContain("nicht");
+  });
+
+  it("erreicht ohne KI-Analyse ausnahmslos höchstens Stufe 2", () => {
+    // Auch mit offizieller Quelle, auch bei vielen Herausgebern. Vorher war
+    // genau das die Lücke, durch die Stufe 6 ohne inhaltliche Prüfung entstand.
+    const gruppe = [
+      v({ titel: "Problem X", herausgeber: "Microsoft", quellentyp: "hersteller_offiziell" }),
+      v({ titel: "Problem X bei uns auch", herausgeber: "heise" }),
+      v({ titel: "Problem X betrifft viele", herausgeber: "Golem" }),
+      v({ titel: "Problem X - Statusseite", herausgeber: "MS Status", quellentyp: "status_seite" }),
+    ];
+    const belege = klassifiziereGruppe(gruppe).map((befund) => ({
+      inhaltId: befund.inhaltId,
+      herausgeber: gruppe.find((g) => g.inhaltId === befund.inhaltId)?.herausgeber ?? "",
+      quellentyp: "fachmedium",
+      beziehung: befund.beziehung,
+      klassifikation: befund.klassifikation,
+      technischNachvollziehbar: true,
+      erfasstAm: new Date(),
+    }));
+    expect(ermittleReifegrad(belege).stufe).toBeLessThanOrEqual(2);
   });
 
   it("liefert für jeden Befund eine Begründung", () => {

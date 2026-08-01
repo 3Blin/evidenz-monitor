@@ -207,7 +207,9 @@ Vorher verwies die Verwaltung auf einen Fall, den man nicht bearbeiten konnte.
 **Existiert, damit:** keine Stufe behauptet wird, die nie geprüft wurde. Drei
 Portale, die dieselbe Herstellermeldung abschreiben, sind keine drei
 unabhängigen Quellen. Die Folge ist ausdrücklich gewollt: Ohne KI-Analyse endet
-die Leiter bei Stufe 2, sofern keine offizielle Primärquelle beteiligt ist.
+die Leiter bei Stufe 2 — ausnahmslos (ADR 0018). Auch ein Beitrag einer
+zuständigen Primärquelle hebt sie nicht: Ob er bestätigt oder widerspricht,
+ist ohne inhaltliche Prüfung nicht entscheidbar.
 **Nicht im Betrieb:** Der KI-Analyse-Baustein (`src/lib/ki-adapter.ts`) ist
 gebaut und getestet, wird aber von keinem Auswertungslauf aufgerufen. Was zum
 Anschließen fehlt, steht in ADR 0011.

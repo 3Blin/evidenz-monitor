@@ -90,6 +90,8 @@ die diese Einordnung überschreiben darf (Vertrag: ARCHITEKTUR.md).
 
 **Folge, ausdrücklich gewollt:** Ohne KI-Analyse erreicht eine Aussage höchstens
 Stufe 2 („mehrfach beobachtet"), sofern keine offizielle Primärquelle beteiligt
+[**diese Ausnahme ist mit ADR 0018 entfallen — sie war derselbe Fehlschluss
+noch einmal**]
 ist. Die Leiter wird also kürzer — aber sie lügt nicht mehr.
 
 ### 6. Der ungenutzte KI-Adapter wird als solcher gekennzeichnet

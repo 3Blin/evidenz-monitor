@@ -49,6 +49,13 @@ export interface Vorbefund {
   readonly begruendung: string;
 }
 
+/**
+ * Quellenarten, die als zuständige Primärquelle gelten.
+ *
+ * Beachte: Das sagt, WER spricht - nicht, WAS gesagt wurde. Für die
+ * Klassifikation des Belegs wird dieser Wert deshalb NICHT verwendet; siehe
+ * die Begründung bei klassifiziereGruppe.
+ */
 const OFFIZIELL = new Set(["hersteller_offiziell", "status_seite"]);
 
 /**
@@ -71,10 +78,25 @@ const OFFIZIELL = new Set(["hersteller_offiziell", "status_seite"]);
  * vorbehalten, die diese Einordnung überschreiben darf (Vertrag:
  * ARCHITEKTUR.md). Bis dahin gilt die vorsichtige Annahme.
  *
+ * Zweitens, und aus demselben Grund: Ein Beitrag einer offiziellen
+ * Primärquelle wird NICHT mehr als "offizielle_bestaetigung" eingestuft.
+ *
+ * Das tat die vorige Fassung, und es war derselbe Fehlschluss noch einmal, nur
+ * an anderer Stelle: Der Quellentyp sagt, WER spricht, nicht WAS gesagt wurde.
+ * Ein Dementi eines Ministeriums, ein Hinweis "wir prüfen das", eine Meldung
+ * über ein ganz anderes Teilproblem - alles drei kam damit als "offiziell
+ * bestätigt" heraus und hob die Aussage auf Stufe 6. Bei einem System, dessen
+ * Zweck es ist, Falschmeldungen zu erkennen, ist das der schlimmste denkbare
+ * Fehler: Es hätte eine Widerlegung als Bestätigung ausgewiesen.
+ *
+ * Ob eine Äußerung bestätigt oder widerspricht, ist eine inhaltliche Frage.
+ * Sie bleibt der KI-Analyse vorbehalten. Dass eine Primärquelle beteiligt ist,
+ * geht deshalb nicht verloren - es steht in der Begründung, wo es hingehört:
+ * als Hinweis, nicht als Urteil.
+ *
  * Folge: Ohne KI-Analyse erreicht eine Aussage höchstens Stufe 2
- * ("mehrfach beobachtet") - es sei denn, eine offizielle Primärquelle ist
- * beteiligt. Das ist gewollt: Lieber eine Stufe zu niedrig als eine
- * Unabhängigkeit behaupten, die nie geprüft wurde.
+ * ("mehrfach beobachtet"), ausnahmslos. Das ist gewollt: Lieber eine Stufe zu
+ * niedrig als eine Bestätigung behaupten, die nie geprüft wurde.
  */
 export function klassifiziereGruppe(gruppe: readonly VorInhalt[]): readonly Vorbefund[] {
   if (gruppe.length === 0) return [];
@@ -85,15 +107,22 @@ export function klassifiziereGruppe(gruppe: readonly VorInhalt[]): readonly Vorb
   if (!primaer) return [];
 
   return sortiert.map((inhalt, index) => {
-    const klassifikation: Klassifikation = OFFIZIELL.has(inhalt.quellentyp)
-      ? "offizielle_bestaetigung"
-      : "stuetzt";
+    // Ohne Sprachverständnis stützt ein Beleg die Aussage, mehr ist nicht
+    // feststellbar. Widerspruch, offizielle Bestätigung und Korrektur setzt
+    // ausschließlich die KI-Analyse.
+    const klassifikation: Klassifikation = "stuetzt";
+    const amtlich = OFFIZIELL.has(inhalt.quellentyp)
+      ? " Beitrag einer zuständigen Primärquelle — ob er den Sachverhalt" +
+        " bestätigt oder ihm widerspricht, ist ohne inhaltliche Prüfung nicht" +
+        " entscheidbar."
+      : "";
+
     if (index === 0) {
       return {
         inhaltId: inhalt.inhaltId,
         beziehung: "primaer",
         klassifikation,
-        begruendung: "Früheste Veröffentlichung dieser Meldung",
+        begruendung: `Früheste Veröffentlichung dieser Meldung.${amtlich}`,
       };
     }
     const gleicherHerausgeber =
@@ -102,9 +131,11 @@ export function klassifiziereGruppe(gruppe: readonly VorInhalt[]): readonly Vorb
       inhaltId: inhalt.inhaltId,
       beziehung: "uebernahme",
       klassifikation,
-      begruendung: gleicherHerausgeber
-        ? "Selber Herausgeber wie die Primärmeldung"
-        : "Späterer Beitrag zur selben Meldung; Unabhängigkeit ist noch nicht belegt",
+      begruendung:
+        (gleicherHerausgeber
+          ? "Selber Herausgeber wie die Primärmeldung."
+          : "Späterer Beitrag zur selben Meldung; Unabhängigkeit ist noch nicht belegt.") +
+        amtlich,
     };
   });
 }
